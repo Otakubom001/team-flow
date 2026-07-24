@@ -734,10 +734,16 @@ body {
     <div class="toast" id="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
 // ===== Data Layer =====
+const SUPABASE_URL = 'https://axaebqeezpgbvvkivnqn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YWVicWVlenBnYnZ2a2l2bnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4OTkxNzUsImV4cCI6MjEwMDQ3NTE3NX0.uu82si5hlYV5dSBGTrrorAS465Yo8FwakNU86fSY6Vw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const STORAGE_KEY = 'teamflow_data';
 var currentContentTab = 'active';
+var dataCache = { contents: [], events: [] };
+var dataReady = false;
 
 const STATUS_LABELS = {
     waiting_clip: 'รอทำคลิป',
@@ -873,13 +879,51 @@ function genId() {
 }
 
 function loadData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    return { contents: [], events: [] };
+    return dataCache;
 }
 
-function saveData(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveData(d) {
+    dataCache = d;
+}
+
+async function syncFromSupabase() {
+    var r1 = await sb.from('contents').select('*');
+    var r2 = await sb.from('events').select('*');
+    dataCache.contents = (r1.data || []).map(function(c) {
+        return { id: c.id, title: c.title, content: c.content, assignedTo: c.assigned_to, status: c.status, postDate: c.post_date, createdAt: c.created_at, updatedAt: c.updated_at };
+    });
+    dataCache.events = (r2.data || []).map(function(e) {
+        return { id: e.id, title: e.title, date: e.date, type: e.type, contentId: e.content_id, description: e.description };
+    });
+    return dataCache;
+}
+
+async function saveContent(c) {
+    var row = { id: c.id, title: c.title, content: c.content || '', assigned_to: c.assignedTo, status: c.status, post_date: c.postDate || null, created_at: c.createdAt, updated_at: c.updatedAt };
+    await sb.from('contents').upsert(row);
+}
+
+async function deleteContent(id) {
+    await sb.from('contents').delete().eq('id', id);
+    await sb.from('events').delete().eq('content_id', id);
+}
+
+async function saveEvent(e) {
+    var row = { id: e.id, title: e.title, date: e.date, type: e.type, content_id: e.contentId || null, description: e.description || '' };
+    await sb.from('events').upsert(row);
+}
+
+async function deleteEvent(id) {
+    await sb.from('events').delete().eq('id', id);
+}
+
+async function getSetting(key) {
+    var r = await sb.from('settings').select('value').eq('key', key).single();
+    return r.data ? r.data.value : null;
+}
+
+async function setSetting(key, value) {
+    await sb.from('settings').upsert({ key: key, value: value });
 }
 
 function formatDate(dateStr) {
@@ -915,9 +959,8 @@ window.copyDesc = function(el) {
 };
 
 // PIN System
-(function initPinSystem() {
-    var overlay = document.getElementById('pinOverlay');
-    var savedPin = localStorage.getItem('teamflow_pin');
+(async function initPinSystem() {
+    var savedPin = await getSetting('pin');
     if (!savedPin) {
         document.getElementById('pinSetup').style.display = '';
         document.getElementById('pinLogin').style.display = 'none';
@@ -961,24 +1004,26 @@ function clearPinInputs(containerId) {
     if (inputs[0]) inputs[0].focus();
 }
 
-function submitSetupPin() {
+async function submitSetupPin() {
     var pin = getPinValue('setupPinInputs');
     var confirm = getPinValue('confirmPinInputs');
     var err = document.getElementById('setupError');
     if (pin.length < 4) { err.textContent = 'กรุณาใส่ PIN 4 หลัก'; return; }
     if (pin !== confirm) { err.textContent = 'รหัส PIN ไม่ตรงกัน'; clearPinInputs('confirmPinInputs'); return; }
-    localStorage.setItem('teamflow_pin', pin);
+    await setSetting('pin', pin);
     document.getElementById('pinOverlay').style.display = 'none';
     showToast('ตั้งรหัส PIN สำเร็จ!');
+    await initApp();
 }
 
-function submitLoginPin() {
+async function submitLoginPin() {
     var pin = getPinValue('loginPinInputs');
-    var savedPin = localStorage.getItem('teamflow_pin');
+    var savedPin = await getSetting('pin');
     var err = document.getElementById('loginError');
     if (pin.length < 4) { err.textContent = 'กรุณาใส่ PIN 4 หลัก'; return; }
     if (pin !== savedPin) { err.textContent = 'รหัส PIN ไม่ถูกต้อง'; clearPinInputs('loginPinInputs'); return; }
     document.getElementById('pinOverlay').style.display = 'none';
+    await initApp();
 }
 
 function toggleTheme() {
@@ -998,9 +1043,16 @@ function toggleTheme() {
     }
 })();
 
-let data = loadData();
+let data = { contents: [], events: [] };
 let quill = null;
 let currentCalMonth, currentCalYear, selectedCalDate;
+
+async function initApp() {
+    await syncFromSupabase();
+    data = loadData();
+    dataReady = true;
+    renderDashboard();
+}
 
 document.querySelectorAll('.nav-item').forEach(function(item) {
     item.addEventListener('click', function(e) {
@@ -1192,12 +1244,13 @@ window.openContentForEdit = function(id) {
     }
 };
 
-document.getElementById('btn-save-content').addEventListener('click', function() {
+document.getElementById('btn-save-content').addEventListener('click', async function() {
     var id = document.getElementById('content-id').value;
     var title = document.getElementById('content-title').value.trim();
     if (!title) { showToast('กรุณาใส่ชื่อเรื่อง'); return; }
     data = loadData();
     var now = new Date().toISOString();
+    var item;
     if (id) {
         var idx = data.contents.findIndex(function(c) { return c.id === id; });
         if (idx >= 0) {
@@ -1207,29 +1260,33 @@ document.getElementById('btn-save-content').addEventListener('click', function()
             data.contents[idx].status = document.getElementById('content-status').value;
             data.contents[idx].postDate = document.getElementById('content-post-date').value;
             data.contents[idx].updatedAt = now;
+            item = data.contents[idx];
         }
     } else {
-        data.contents.push({
+        item = {
             id: genId(), title: title, content: quill.root.innerHTML,
             assignedTo: document.getElementById('content-assigned').value,
             status: document.getElementById('content-status').value,
             postDate: document.getElementById('content-post-date').value,
             createdAt: now, updatedAt: now
-        });
+        };
+        data.contents.push(item);
     }
     saveData(data);
+    await saveContent(item);
     closeModal('modal-content');
     renderContentList();
     showToast(id ? 'บันทึกเรียบร้อย' : 'สร้างเนื้อเรื่องใหม่แล้ว');
 });
 
-document.getElementById('btn-delete-content').addEventListener('click', function() {
+document.getElementById('btn-delete-content').addEventListener('click', async function() {
     var id = document.getElementById('content-id').value;
     if (!id) return;
     if (!confirm('ต้องการลบเนื้อเรื่องนี้?')) return;
     data = loadData();
     data.contents = data.contents.filter(function(c) { return c.id !== id; });
     saveData(data);
+    await deleteContent(id);
     closeModal('modal-content');
     renderContentList();
     showToast('ลบเนื้อเรื่องแล้ว');
@@ -1275,7 +1332,7 @@ window.openStatusModal = function(id) {
     document.getElementById('modal-status').classList.add('show');
 };
 
-document.getElementById('btn-save-status').addEventListener('click', function() {
+document.getElementById('btn-save-status').addEventListener('click', async function() {
     var id = document.getElementById('modal-status').dataset.contentId;
     data = loadData();
     var content = data.contents.find(function(c) { return c.id === id; });
@@ -1284,6 +1341,7 @@ document.getElementById('btn-save-status').addEventListener('click', function() 
         content.assignedTo = document.getElementById('new-assigned').value;
         content.updatedAt = new Date().toISOString();
         saveData(data);
+        await saveContent(content);
     }
     closeModal('modal-status');
     renderKanban();
@@ -1417,6 +1475,7 @@ function initCalendarDragDrop() {
             item.postDate = newDate;
             item.updatedAt = new Date().toISOString();
             saveData(data);
+            saveContent(item);
             showToast('ย้าย "' + item.title + '" ไปวันที่ ' + formatDate(newDate));
             renderCalendar();
         }
@@ -1506,13 +1565,14 @@ window.openEventForEdit = function(id) {
     if (event) openEventModal(event);
 };
 
-document.getElementById('btn-save-event').addEventListener('click', function() {
+document.getElementById('btn-save-event').addEventListener('click', async function() {
     var id = document.getElementById('event-id').value;
     var title = document.getElementById('event-title').value.trim();
     var date = document.getElementById('event-date').value;
     if (!title) { showToast('กรุณาใส่ชื่อกำหนดการ'); return; }
     if (!date) { showToast('กรุณาเลือกวันที่'); return; }
     data = loadData();
+    var item;
     if (id) {
         var idx = data.events.findIndex(function(e) { return e.id === id; });
         if (idx >= 0) {
@@ -1521,28 +1581,32 @@ document.getElementById('btn-save-event').addEventListener('click', function() {
             data.events[idx].type = document.getElementById('event-type').value;
             data.events[idx].contentId = document.getElementById('event-content-link').value;
             data.events[idx].description = document.getElementById('event-description').value;
+            item = data.events[idx];
         }
     } else {
-        data.events.push({
+        item = {
             id: genId(), title: title, date: date,
             type: document.getElementById('event-type').value,
             contentId: document.getElementById('event-content-link').value,
             description: document.getElementById('event-description').value
-        });
+        };
+        data.events.push(item);
     }
     saveData(data);
+    await saveEvent(item);
     closeModal('modal-event');
     renderCalendar();
     showToast(id ? 'บันทึกเรียบร้อย' : 'เพิ่มกำหนดการแล้ว');
 });
 
-document.getElementById('btn-delete-event').addEventListener('click', function() {
+document.getElementById('btn-delete-event').addEventListener('click', async function() {
     var id = document.getElementById('event-id').value;
     if (!id) return;
     if (!confirm('ต้องการลบกำหนดการนี้?')) return;
     data = loadData();
     data.events = data.events.filter(function(e) { return e.id !== id; });
     saveData(data);
+    await deleteEvent(id);
     closeModal('modal-event');
     renderCalendar();
     showToast('ลบกำหนดการแล้ว');
