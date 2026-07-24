@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team อีนิล - จัดการงานทีม</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg: #F0F2F5;
+    --sidebar-bg: #1E1E2E;
+    --sidebar-text: #CDD6F4;
+    --sidebar-active: #6C5CE7;
+    --card-bg: #FFFFFF;
+    --text: #2D3436;
+    --text-secondary: #636E72;
+    --border: #E0E4E8;
+    --primary: #6C5CE7;
+    --primary-hover: #5A4BD1;
+    --danger: #E74C3C;
+    --success: #00B894;
+    --warning: #FDCB6E;
+    --info: #74B9FF;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+    --transition: 0.2s ease;
+}
+
+[data-theme="dark"] {
+    --bg: #1A1A2E;
+    --sidebar-bg: #16213E;
+    --sidebar-text: #A8B2D1;
+    --sidebar-active: #7C6FE7;
+    --card-bg: #222244;
+    --text: #E0E0E0;
+    --text-secondary: #8892A8;
+    --border: #2E3452;
+    --primary: #7C6FE7;
+    --primary-hover: #6C5CE7;
+    --danger: #E74C3C;
+    --success: #00B894;
+    --warning: #FDCB6E;
+    --info: #74B9FF;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .cal-day:hover { background: #2E2E50; }
+[data-theme="dark"] .cal-day.today { background: #2E2860; }
+[data-theme="dark"] .cal-day.selected { background: #3A3470; }
+[data-theme="dark"] .cal-day.has-holiday { background: #2A2555; }
+[data-theme="dark"] .cal-day.has-content { background: #28254A; }
+[data-theme="dark"] .cal-day.has-event { background: #1A3040; }
+[data-theme="dark"] .cal-day.has-content.has-holiday { background: linear-gradient(135deg, #2A2555 50%, #28254A 50%); }
+[data-theme="dark"] .sug-desc-box { background: #2A2A4A; border-color: #3A3470; color: #E0E0E0; }
+[data-theme="dark"] .sug-desc-box:hover { background: #32305A; }
+[data-theme="dark"] .de-desc-box { background: #2A2A4A; color: #E0E0E0; }
+[data-theme="dark"] .de-desc-box:hover { background: #32305A; }
+[data-theme="dark"] .status-waiting_clip { background: #3D3200; color: #FDCB6E; }
+[data-theme="dark"] .status-making_clip { background: #2A2555; color: #A89BF0; }
+[data-theme="dark"] .status-ready { background: #0D3028; color: #00D9A3; }
+[data-theme="dark"] .status-posted { background: #2D1840; color: #C39BD3; }
+[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.7); }
+[data-theme="dark"] .search-box input { color: var(--text); }
+[data-theme="dark"] .toast { background: #E0E0E0; color: #1A1A2E; }
+[data-theme="dark"] .ql-toolbar { background: #2A2A4A; border-color: #3A3470; }
+[data-theme="dark"] .ql-toolbar .ql-stroke { stroke: #A8B2D1; }
+[data-theme="dark"] .ql-toolbar .ql-fill { fill: #A8B2D1; }
+[data-theme="dark"] .ql-toolbar .ql-picker-label { color: #A8B2D1; }
+[data-theme="dark"] .ql-container { border-color: #3A3470; }
+[data-theme="dark"] #editor-container .ql-editor { color: #E0E0E0; }
+.theme-toggle { margin: 12px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); padding: 8px 14px; border-radius: 20px; cursor: pointer; transition: all var(--transition); display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 12px; font-weight: 500; width: calc(100% - 32px); justify-content: center; }
+.theme-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pin-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+.pin-box { background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 40px; width: 360px; text-align: center; color: #fff; }
+.pin-box .pin-logo { font-size: 2.5em; margin-bottom: 8px; }
+.pin-box h2 { font-size: 1.3em; font-weight: 600; margin-bottom: 6px; }
+.pin-box p { font-size: 0.85em; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+.pin-input { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-input input { width: 48px; height: 56px; border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1.5em; font-weight: 700; text-align: center; outline: none; transition: border-color 0.2s; font-family: inherit; }
+.pin-input input:focus { border-color: #6C5CE7; }
+.pin-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; background: #6C5CE7; color: #fff; font-size: 1em; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+.pin-btn:hover { background: #5A4BD1; }
+.pin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pin-error { color: #FF6B6B; font-size: 0.85em; margin-top: 12px; min-height: 20px; }
+.pin-confirm-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-confirm-row input { width: 48px; height: 56px; border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1.5em; font-weight: 700; text-align: center; outline: none; transition: border-color 0.2s; font-family: inherit; }
+.pin-confirm-row input:focus { border-color: #6C5CE7; }
+.pin-confirm-label { font-size: 0.8em; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+
+body {
+    font-family: 'Noto Sans Thai', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    transition: transform var(--transition);
+}
+
+.sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; color: #fff; }
+.logo i { color: var(--primary); font-size: 26px; }
+.sidebar-nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+
+.nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    border-radius: var(--radius-sm); color: var(--sidebar-text);
+    text-decoration: none; font-size: 15px; font-weight: 500; transition: all var(--transition);
+}
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: var(--sidebar-active); color: #fff; }
+.nav-item i { width: 20px; text-align: center; }
+
+.sidebar-team { margin-top: auto; padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+.sidebar-team h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.4); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.team-member { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
+.member-info { display: flex; flex-direction: column; }
+.member-info .name { font-size: 14px; font-weight: 600; color: #fff; }
+.member-info .role { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+.main-content { margin-left: 260px; flex: 1; padding: 32px; min-height: 100vh; }
+.mobile-header { display: none; align-items: center; gap: 12px; margin-bottom: 20px; }
+.menu-toggle { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 18px; cursor: pointer; }
+.mobile-title { font-size: 20px; font-weight: 700; }
+
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.page-header h1 { font-size: 26px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+.page-header h1 i { color: var(--primary); }
+.subtitle { color: var(--text-secondary); font-size: 14px; }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #C0392B; }
+.btn-icon { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; }
+.btn-icon:hover { background: var(--bg); }
+.btn-sm { padding: 6px 14px; font-size: 13px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+.btn-sm:hover { background: var(--bg); }
+
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
+.stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 24px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); border-left: 4px solid var(--accent); }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 15%, transparent); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--accent); }
+.stat-number { font-size: 28px; font-weight: 700; display: block; }
+.stat-label { font-size: 13px; color: var(--text-secondary); }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.recent-list, .upcoming-list, .holiday-list { display: flex; flex-direction: column; gap: 8px; }
+.recent-item, .upcoming-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); cursor: pointer; transition: background var(--transition); }
+.recent-item:hover, .upcoming-item:hover { background: var(--border); }
+.recent-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.recent-item .item-title { flex: 1; font-size: 14px; font-weight: 500; }
+.recent-item .item-date { font-size: 12px; color: var(--text-secondary); }
+.upcoming-item .up-date { background: var(--primary); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.upcoming-item .up-title { flex: 1; font-size: 14px; font-weight: 500; }
+.holiday-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); margin-bottom: 8px; }
+.holiday-item .holiday-date { font-size: 12px; font-weight: 700; color: var(--primary); min-width: 50px; }
+.holiday-item .holiday-name { font-size: 14px; font-weight: 500; }
+.holiday-item .holiday-suggest { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.empty-state { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 14px; }
+
+.content-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--bg); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.content-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border: none; border-radius: 6px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); }
+.content-tab:hover { color: var(--text); background: var(--card-bg); }
+.content-tab.active { background: var(--card-bg); color: var(--primary); font-weight: 600; box-shadow: var(--shadow); }
+.tab-count { background: var(--border); color: var(--text-secondary); padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+.content-tab.active .tab-count { background: var(--primary); color: #fff; }
+.content-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; flex: 1; min-width: 200px; }
+.search-box i { color: var(--text-secondary); }
+.search-box input { border: none; outline: none; font-family: inherit; font-size: 14px; width: 100%; background: transparent; color: var(--text); }
+.filter-group { display: flex; gap: 8px; }
+.filter-group select { padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; background: var(--card-bg); cursor: pointer; color: var(--text); }
+.content-list { display: flex; flex-direction: column; gap: 12px; }
+.content-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all var(--transition); box-shadow: var(--shadow); }
+.content-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(108,92,231,0.1); transform: translateY(-1px); }
+.content-card .cc-status { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.content-card .cc-info { flex: 1; }
+.content-card .cc-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.content-card .cc-meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 16px; flex-wrap: wrap; }
+.content-card .cc-meta span { display: flex; align-items: center; gap: 4px; }
+.status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.status-waiting_clip { background: #FEF9E7; color: #B7950B; }
+.status-making_clip { background: #F0EAFF; color: #6C5CE7; }
+.status-ready { background: #E8F8F5; color: #00B894; }
+.status-posted { background: #F0EAFF; color: #8E44AD; }
+
+.kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; min-height: calc(100vh - 180px); }
+.kanban-column { min-width: 260px; flex: 1; background: var(--bg); border-radius: var(--radius); display: flex; flex-direction: column; border: 1px solid var(--border); }
+.column-header { padding: 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); background: var(--card-bg); border-radius: var(--radius) var(--radius) 0 0; }
+.col-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--col-color); }
+.column-header h3 { font-size: 14px; font-weight: 600; flex: 1; }
+.col-count { background: var(--border); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.column-body { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 100px; }
+.kanban-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; cursor: pointer; transition: all var(--transition); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.kanban-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(108,92,231,0.12); transform: translateY(-2px); }
+.kanban-card .kc-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.kanban-card .kc-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+.kanban-card .kc-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.kanban-card .kc-actions { display: flex; gap: 6px; margin-top: 10px; }
+.kanban-card .kc-actions button { flex: 1; padding: 5px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; font-family: inherit; transition: all var(--transition); color: var(--text); }
+.kanban-card .kc-actions button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.calendar-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+.calendar-main { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.calendar-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.calendar-nav h2 { flex: 1; text-align: center; font-size: 20px; }
+.cal-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.cal-body { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-day { min-height: 80px; padding: 6px; border: 1px solid transparent; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); cursor: pointer; transition: background var(--transition); position: relative; }
+.cal-day:nth-child(7n) { border-right: none; }
+.cal-day:hover { background: #F8F0FF; }
+.cal-day.other-month { color: #ccc; }
+.cal-day.today { background: #F0EAFF; border-color: var(--primary); border-radius: 4px; }
+.cal-day.selected { background: #E8E0FF; border-color: var(--primary); border-radius: 4px; }
+.cal-day .day-number { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.cal-day.today .day-number { background: var(--primary); color: #fff; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.cal-day .day-events { display: flex; flex-direction: column; gap: 2px; }
+.cal-event-dot { font-size: 10px; padding: 1px 5px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+.cal-event-dot.type-content { background: #6C5CE7; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: grab; }
+.cal-event-dot.type-content:active { cursor: grabbing; }
+.cal-event-dot.type-content.dragging { opacity: 0.5; }
+.cal-event-dot.type-post_schedule { background: #00B894; color: #fff; font-weight: 600; }
+.cal-event-dot.type-important { background: #E67E22; color: #fff; font-weight: 600; }
+.cal-event-dot.type-holiday { background: #6C5CE7; color: #fff; font-weight: 600; }
+.cal-day.has-holiday { background: #F0EAFF; }
+.cal-day.has-content { background: #EDE7FF; }
+.cal-day.has-event { background: #E8F8F5; }
+.cal-day.has-content.has-holiday { background: linear-gradient(135deg, #F0EAFF 50%, #EDE7FF 50%); }
+.cal-day.drag-over { background: #E8DEFF; outline: 2px dashed var(--primary); outline-offset: -2px; }
+.calendar-sidebar { display: flex; flex-direction: column; gap: 16px; }
+.calendar-sidebar .card { padding: 20px; }
+.suggestion-item { padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 8px; border-left: 3px solid var(--primary); }
+.suggestion-item .sug-date { font-size: 12px; font-weight: 700; color: var(--primary); }
+.suggestion-item .sug-title { font-size: 14px; font-weight: 500; margin: 2px 0; }
+.suggestion-item .sug-desc { font-size: 12px; color: var(--text-secondary); }
+.suggestion-item .sug-detail { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+.suggestion-item .sug-detail i { width: 14px; text-align: center; margin-right: 2px; }
+.suggestion-item .sug-detail strong { color: var(--text); }
+.sug-desc-box { font-size: 12px; color: var(--text); background: #F8F7FF; border: 1px solid #E8E0FF; border-radius: 6px; padding: 10px 12px; margin-top: 6px; white-space: pre-line; line-height: 1.6; cursor: pointer; position: relative; transition: background 0.15s; }
+.sug-desc-box:hover { background: #EFEBFF; }
+.sug-desc-box .copy-hint { position: absolute; top: 6px; right: 8px; font-size: 10px; color: var(--primary); opacity: 0; transition: opacity 0.15s; }
+.sug-desc-box:hover .copy-hint { opacity: 1; }
+.holiday-desc-box { font-size: 12px; color: var(--text); white-space: pre-line; line-height: 1.5; margin-top: 4px; padding: 6px 0; }
+.de-desc-box { font-size: 12px; color: var(--text); white-space: pre-line; line-height: 1.5; margin-top: 4px; background: #F8F7FF; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.de-desc-box:hover { background: #EFEBFF; }
+.day-event-item { padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; transition: background var(--transition); }
+.day-event-item:hover { background: var(--border); }
+.day-event-item .de-title { font-size: 14px; font-weight: 500; }
+.day-event-item .de-type { font-size: 12px; color: var(--text-secondary); }
+.selected-date-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+.modal { background: var(--card-bg); border-radius: var(--radius); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal-large { max-width: 800px; }
+.modal-small { max-width: 420px; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+.modal-header h2 { font-size: 18px; }
+.btn-close { background: none; border: none; font-size: 18px; color: var(--text-secondary); cursor: pointer; padding: 4px; }
+.btn-close:hover { color: var(--danger); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
+.form-group input[type="text"], .form-group input[type="date"], .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; transition: border-color var(--transition); background: var(--card-bg); color: var(--text); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,92,231,0.1); }
+.form-row { display: flex; gap: 16px; }
+.form-row .form-group { flex: 1; }
+.form-row .flex-2 { flex: 2; }
+#editor-container { height: 250px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+#editor-container .ql-editor { font-family: 'Noto Sans Thai', sans-serif; font-size: 15px; line-height: 1.8; }
+
+.toast { position: fixed; bottom: 30px; right: 30px; background: #2D3436; color: #fff; padding: 14px 24px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; z-index: 2000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; box-shadow: var(--shadow-lg); }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+@media (max-width: 1024px) { .calendar-layout { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; padding: 16px; }
+    .mobile-header { display: flex; }
+    .page-header h1 { font-size: 20px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .kanban-board { flex-direction: column; }
+    .kanban-column { min-width: 100%; }
+    .form-row { flex-direction: column; gap: 0; }
+    .content-toolbar { flex-direction: column; }
+    .filter-group { width: 100%; }
+    .filter-group select { flex: 1; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+}
+    </style>
+</head>
+<body>
+    <!-- PIN Lock -->
+    <div class="pin-overlay" id="pinOverlay">
+        <div class="pin-box" id="pinSetup" style="display:none">
+            <div class="pin-logo"><i class="fas fa-bolt"></i></div>
+            <h2>Team อีนิล</h2>
+            <p>ตั้งรหัส PIN 4 หลัก สำหรับเข้าใช้งาน</p>
+            <div class="pin-input" id="setupPinInputs">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="pin-confirm-label">ยืนยันรหัส PIN อีกครั้ง</div>
+            <div class="pin-confirm-row" id="confirmPinInputs">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+            </div>
+            <button class="pin-btn" onclick="submitSetupPin()">ตั้งรหัส PIN</button>
+            <div class="pin-error" id="setupError"></div>
+        </div>
+        <div class="pin-box" id="pinLogin" style="display:none">
+            <div class="pin-logo"><i class="fas fa-lock"></i></div>
+            <h2>Team อีนิล</h2>
+            <p>ใส่รหัส PIN เพื่อเข้าใช้งาน</p>
+            <div class="pin-input" id="loginPinInputs">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input type="password" maxlength="1" inputmode="numeric" autocomplete="off">
+            </div>
+            <button class="pin-btn" onclick="submitLoginPin()">เข้าใช้งาน</button>
+            <div class="pin-error" id="loginError"></div>
+        </div>
+    </div>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-bolt"></i>
+                <span>Team อีนิล</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-page="dashboard">
+                <i class="fas fa-th-large"></i><span>แดชบอร์ด</span>
+            </a>
+            <a href="#" class="nav-item" data-page="content">
+                <i class="fas fa-file-alt"></i><span>เนื้อเรื่อง</span>
+            </a>
+            <a href="#" class="nav-item" data-page="workflow">
+                <i class="fas fa-columns"></i><span>สถานะงาน</span>
+            </a>
+            <a href="#" class="nav-item" data-page="calendar">
+                <i class="fas fa-calendar-alt"></i><span>ปฏิทิน</span>
+            </a>
+        </nav>
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i> <span>โหมดมืด</span>
+        </button>
+        <div class="sidebar-team">
+            <h4><i class="fas fa-users"></i> สมาชิกทีม</h4>
+            <div class="team-member">
+                <div class="avatar" style="background:#FF6B6B">พ</div>
+                <div class="member-info">
+                    <span class="name">พลอย</span>
+                    <span class="role">เขียนเนื้อเรื่อง / โพสต์</span>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="avatar" style="background:#6C5CE7">บ</div>
+                <div class="member-info">
+                    <span class="name">บอม</span>
+                    <span class="role">ทำคลิป AI</span>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="avatar" style="background:#00B894">พ</div>
+                <div class="member-info">
+                    <span class="name">เพชร</span>
+                    <span class="role">ทำคลิป AI</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+            <span class="mobile-title">Team อีนิล</span>
+        </div>
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <section class="page active" id="page-dashboard">
+            <div class="page-header">
+                <h1><i class="fas fa-th-large"></i> แดชบอร์ด</h1>
+                <p class="subtitle" id="dashboard-date"></p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card" style="--accent:#FF6B6B">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="stat-total">0</span>
+                        <span class="stat-label">เนื้อเรื่องทั้งหมด</span>
+                    </div>
+                </div>
+                <div class="stat-card" style="--accent:#FDCB6E">
+                    <div class="stat-icon"><i class="fas fa-pen"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="stat-waiting">0</span>
+                        <span class="stat-label">รอทำคลิป</span>
+                    </div>
+                </div>
+                <div class="stat-card" style="--accent:#6C5CE7">
+                    <div class="stat-icon"><i class="fas fa-magic"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="stat-clip">0</span>
+                        <span class="stat-label">ทำคลิป AI</span>
+                    </div>
+                </div>
+                <div class="stat-card" style="--accent:#00B894">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="stat-posted">0</span>
+                        <span class="stat-label">โพสต์แล้ว</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3><i class="fas fa-clock"></i> งานล่าสุด</h3>
+                    <div id="recent-items" class="recent-list"></div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-calendar-day"></i> โพสต์ที่จะถึง</h3>
+                    <div id="upcoming-posts" class="upcoming-list"></div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-star"></i> วันสำคัญเดือนนี้</h3>
+                    <div id="dashboard-holidays" class="holiday-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== CONTENT ==================== -->
+        <section class="page" id="page-content">
+            <div class="page-header">
+                <h1><i class="fas fa-file-alt"></i> เนื้อเรื่อง</h1>
+                <button class="btn btn-primary" id="btn-new-content">
+                    <i class="fas fa-plus"></i> สร้างเนื้อเรื่องใหม่
+                </button>
+            </div>
+            <div class="content-tabs">
+                <button class="content-tab active" data-tab="active" onclick="switchContentTab('active')">
+                    <i class="fas fa-edit"></i> กำลังทำ <span class="tab-count" id="tab-count-active">0</span>
+                </button>
+                <button class="content-tab" data-tab="archive" onclick="switchContentTab('archive')">
+                    <i class="fas fa-archive"></i> คลัง (โพสต์แล้ว) <span class="tab-count" id="tab-count-archive">0</span>
+                </button>
+            </div>
+            <div class="content-toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="content-search" placeholder="ค้นหาเนื้อเรื่อง...">
+                </div>
+                <div class="filter-group">
+                    <select id="content-filter-status">
+                        <option value="all">ทุกสถานะ</option>
+                        <option value="waiting_clip">รอทำคลิป</option>
+                        <option value="making_clip">ทำคลิป AI</option>
+                        <option value="ready">พร้อมโพสต์</option>
+                    </select>
+                    <select id="content-filter-member">
+                        <option value="all">ทุกคน</option>
+                        <option value="พลอย">พลอย</option>
+                        <option value="บอม">บอม</option>
+                        <option value="เพชร">เพชร</option>
+                    </select>
+                </div>
+            </div>
+            <div id="content-list" class="content-list"></div>
+        </section>
+
+        <!-- ==================== WORKFLOW ==================== -->
+        <section class="page" id="page-workflow">
+            <div class="page-header">
+                <h1><i class="fas fa-columns"></i> สถานะงาน</h1>
+            </div>
+            <div class="kanban-board" id="kanban-board">
+                <div class="kanban-column" data-status="waiting_clip">
+                    <div class="column-header" style="--col-color:#FDCB6E">
+                        <span class="col-dot"></span>
+                        <h3>รอทำคลิป</h3>
+                        <span class="col-count" id="count-waiting_clip">0</span>
+                    </div>
+                    <div class="column-body" id="col-waiting_clip"></div>
+                </div>
+                <div class="kanban-column" data-status="making_clip">
+                    <div class="column-header" style="--col-color:#6C5CE7">
+                        <span class="col-dot"></span>
+                        <h3>ทำคลิป AI</h3>
+                        <span class="col-count" id="count-making_clip">0</span>
+                    </div>
+                    <div class="column-body" id="col-making_clip"></div>
+                </div>
+                <div class="kanban-column" data-status="ready">
+                    <div class="column-header" style="--col-color:#00B894">
+                        <span class="col-dot"></span>
+                        <h3>พร้อมโพสต์</h3>
+                        <span class="col-count" id="count-ready">0</span>
+                    </div>
+                    <div class="column-body" id="col-ready"></div>
+                </div>
+                <div class="kanban-column" data-status="posted">
+                    <div class="column-header" style="--col-color:#A29BFE">
+                        <span class="col-dot"></span>
+                        <h3>โพสต์แล้ว</h3>
+                        <span class="col-count" id="count-posted">0</span>
+                    </div>
+                    <div class="column-body" id="col-posted"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== CALENDAR ==================== -->
+        <section class="page" id="page-calendar">
+            <div class="page-header">
+                <h1><i class="fas fa-calendar-alt"></i> ปฏิทิน</h1>
+                <button class="btn btn-primary" id="btn-new-event">
+                    <i class="fas fa-plus"></i> เพิ่มกำหนดการ
+                </button>
+            </div>
+            <div class="calendar-layout">
+                <div class="calendar-main">
+                    <div class="calendar-nav">
+                        <button class="btn btn-icon" id="cal-prev"><i class="fas fa-chevron-left"></i></button>
+                        <h2 id="cal-month-year"></h2>
+                        <button class="btn btn-icon" id="cal-next"><i class="fas fa-chevron-right"></i></button>
+                        <button class="btn btn-sm" id="cal-today">วันนี้</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="cal-header">
+                            <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                        </div>
+                        <div class="cal-body" id="cal-body"></div>
+                    </div>
+                </div>
+                <div class="calendar-sidebar">
+                    <div class="card">
+                        <h3><i class="fas fa-star" style="color:#FDCB6E"></i> วันสำคัญเดือนนี้</h3>
+                        <div id="cal-holidays"></div>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-lightbulb" style="color:#6C5CE7"></i> แนะนำคอนเทนต์</h3>
+                        <div id="cal-suggestions"></div>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-list"></i> กำหนดการวันที่เลือก</h3>
+                        <p class="selected-date-label" id="selected-date-label">เลือกวันที่ในปฏิทิน</p>
+                        <div id="cal-day-events"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Content Editor Modal -->
+    <div class="modal-overlay" id="modal-content">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2 id="modal-content-title">สร้างเนื้อเรื่องใหม่</h2>
+                <button class="btn-close" id="close-content-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="content-id">
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label>ชื่อเรื่อง</label>
+                        <input type="text" id="content-title" placeholder="ใส่ชื่อเรื่อง...">
+                    </div>
+                    <div class="form-group">
+                        <label>มอบหมายให้</label>
+                        <select id="content-assigned">
+                            <option value="พลอย">พลอย</option>
+                            <option value="บอม">บอม</option>
+                            <option value="เพชร">เพชร</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>สถานะ</label>
+                        <select id="content-status">
+                            <option value="waiting_clip">รอทำคลิป</option>
+                            <option value="making_clip">ทำคลิป AI</option>
+                            <option value="ready">พร้อมโพสต์</option>
+                            <option value="posted">โพสต์แล้ว</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>วันที่จะโพสต์</label>
+                        <input type="date" id="content-post-date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>เนื้อหา</label>
+                    <div id="editor-container"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-content">ยกเลิก</button>
+                <button class="btn btn-danger" id="btn-delete-content" style="display:none">
+                    <i class="fas fa-trash"></i> ลบ
+                </button>
+                <button class="btn btn-primary" id="btn-save-content">
+                    <i class="fas fa-save"></i> บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Event Modal -->
+    <div class="modal-overlay" id="modal-event">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-event-title">เพิ่มกำหนดการ</h2>
+                <button class="btn-close" id="close-event-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="event-id">
+                <div class="form-group">
+                    <label>ชื่อกำหนดการ</label>
+                    <input type="text" id="event-title" placeholder="เช่น โพสต์คลิปเรื่อง...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>วันที่</label>
+                        <input type="date" id="event-date">
+                    </div>
+                    <div class="form-group">
+                        <label>ประเภท</label>
+                        <select id="event-type">
+                            <option value="post_schedule">กำหนดโพสต์</option>
+                            <option value="important">สำคัญ</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>เนื้อเรื่องที่เกี่ยวข้อง</label>
+                    <select id="event-content-link">
+                        <option value="">-- ไม่เลือก --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>รายละเอียด</label>
+                    <textarea id="event-description" rows="3" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-event">ยกเลิก</button>
+                <button class="btn btn-danger" id="btn-delete-event" style="display:none">
+                    <i class="fas fa-trash"></i> ลบ
+                </button>
+                <button class="btn btn-primary" id="btn-save-event">
+                    <i class="fas fa-save"></i> บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Change Modal (for Kanban) -->
+    <div class="modal-overlay" id="modal-status">
+        <div class="modal modal-small">
+            <div class="modal-header">
+                <h2>เปลี่ยนสถานะ</h2>
+                <button class="btn-close" id="close-status-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="status-item-title" style="font-weight:600;margin-bottom:12px"></p>
+                <div class="form-group">
+                    <label>สถานะใหม่</label>
+                    <select id="new-status">
+                        <option value="waiting_clip">รอทำคลิป</option>
+                        <option value="making_clip">ทำคลิป AI</option>
+                        <option value="ready">พร้อมโพสต์</option>
+                        <option value="posted">โพสต์แล้ว</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>มอบหมายให้</label>
+                    <select id="new-assigned">
+                        <option value="พลอย">พลอย</option>
+                        <option value="บอม">บอม</option>
+                        <option value="เพชร">เพชร</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-status">ยกเลิก</button>
+                <button class="btn btn-primary" id="btn-save-status">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script>
+// ===== Data Layer =====
+const STORAGE_KEY = 'teamflow_data';
+var currentContentTab = 'active';
+
+const STATUS_LABELS = {
+    waiting_clip: 'รอทำคลิป',
+    making_clip: 'ทำคลิป AI',
+    ready: 'พร้อมโพสต์',
+    posted: 'โพสต์แล้ว'
+};
+
+const STATUS_COLORS = {
+    waiting_clip: '#F39C12',
+    making_clip: '#6C5CE7',
+    ready: '#00B894',
+    posted: '#8E44AD'
+};
+
+const MEMBER_COLORS = {
+    'พลอย': '#FF6B6B',
+    'บอม': '#6C5CE7',
+    'เพชร': '#00B894'
+};
+
+const THAI_MONTHS = [
+    'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'
+];
+
+const THAI_MONTHS_SHORT = [
+    'ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+    'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'
+];
+
+const IMPORTANT_DATES = [
+    { month: 0, day: 1, name: 'วันปีใหม่',
+      clip: 'คลิป "ถ้า AI วาดชีวิตคุณปีที่แล้ว vs ปีนี้" — ให้ AI สร้างภาพเปรียบเทียบ Before/After แบบ Cinematic',
+      photo: 'Carousel 5 ภาพ: AI วาดเป้าหมายปีใหม่ 5 ข้อ เป็นภาพสวยๆ (สุขภาพ/การเงิน/ความรัก/งาน/ท่องเที่ยว)',
+      desc: 'ปีที่แล้วตั้งเป้าไว้กี่ข้อ ทำได้กี่ข้อ? 🫣\n\nไม่ต้องตอบก็ได้ เพราะปีนี้เราเริ่มใหม่ได้เสมอ ✨\n\nบอกเป้าหมายปีนี้มา 1 ข้อ เดี๋ยว AI วาดให้ 👇\n\n#ปีใหม่ #NewYear #เป้าหมายปีใหม่ #AI #AIArt' },
+    { month: 1, day: 14, name: 'วันวาเลนไทน์',
+      clip: 'คลิป "AI จับคู่คุณกับคนดัง" — ป้อน prompt ให้ AI สร้างภาพคู่กับดาราแบบตลกๆ แล้วเฉลยว่าเป็น AI',
+      photo: 'ภาพ AI สร้างดอกกุหลาบจากสิ่งของแปลกๆ (กุหลาบจากโค้ด/กุหลาบจากพิซซ่า/กุหลาบจากแมว)',
+      desc: 'คนโสดอ่านต่อ คนมีคู่ก็อ่านได้ 💔💕\n\nวาเลนไทน์ปีนี้ไม่มีใครให้ดอกไม้?\nเดี๋ยว AI ทำให้ แต่มันออกมาแบบนี้... 😂\n\nTag คนที่ควรเห็นโพสต์นี้ 👇\n\n#วาเลนไทน์ #ValentinesDay #AI #คนโสด #มีแฟนก็โสดได้' },
+    { month: 2, day: 8, name: 'วันสตรีสากล',
+      clip: 'คลิป "AI วาดผู้หญิงไทยจากอดีตถึงอนาคต" — สไลด์ภาพผู้หญิงไทยในชุดแต่ละยุค ตั้งแต่สมัยอยุธยาถึงปี 3000',
+      photo: 'ภาพ AI สร้างโปสเตอร์หนังที่มีผู้หญิงเป็นพระเอก — แนว Superhero/Sci-Fi ใส่ชื่อคนดูได้',
+      desc: 'ถ้าผู้หญิงไทยเป็นซูเปอร์ฮีโร่ พลังพิเศษคืออะไร? 🦸‍♀️\n\nAI บอกว่า: "ทำงานหนักได้ทั้งวัน แต่ยังลุกขึ้นมาทำกับข้าวตอนตี 5"\n\nนั่นมันไม่ใช่พลังพิเศษ นั่นคือชีวิตจริง 😭💪\n\n#วันสตรีสากล #WomensDay #ผู้หญิงเก่ง #AI' },
+    { month: 2, day: 13, name: 'วันช้างไทย',
+      clip: 'คลิป "ถ้าช้างไทยมี Instagram" — AI สร้างโปรไฟล์ IG ของช้าง มีโพสต์/Story/Reels แบบตลกๆ',
+      photo: 'ภาพ AI สร้างช้างไทยในสไตล์ต่างๆ: ช้างแร็ปเปอร์ / ช้างนักธุรกิจ / ช้างเกมเมอร์ / ช้างไอดอล',
+      desc: 'ถ้าช้างไทยเล่น IG มันจะโพสต์อะไร? 🐘📱\n\nAI สร้างให้แล้ว ผลลัพธ์คือ... Bio เขียนว่า "ตัวใหญ่แต่ใจบาง 🥺"\n\nช้างไทย = สัตว์ประจำชาติที่ cute ที่สุดในโลก 🇹🇭\n\n#วันช้างไทย #ช้างไทย #AI #ThaiElephantDay' },
+    { month: 3, day: 1, name: "April Fools' Day",
+      clip: 'คลิป "AI ทำนายอนาคตคุณ" — สร้างภาพอนาคตตัวเองแบบเวอร์ๆ (เป็นมหาเศรษฐี/อยู่ดาวอังคาร) แล้วเฉลยว่าโกหก',
+      photo: 'ภาพ AI สร้าง "ข่าวปลอม" ตลกๆ เช่น "แมวชนะเลือกตั้ง" / "กรุงเทพจมน้ำแต่คนไทยยังไปทำงาน"',
+      desc: 'ด่วน!! AI เพิ่งประกาศว่า...\n\n"มนุษย์ไม่ต้องทำงานแล้ว AI ทำให้หมด"\n\n.\n.\n.\nApril Fools 😂🤡 ยังต้องทำงานอีกนานครับพี่น้อง\n\nใครเชื่อยกมือ 🙋\n\n#AprilFools #วันโกหก #AI #โดนหลอก' },
+    { month: 3, day: 6, name: 'วันจักรี',
+      clip: 'คลิป "AI พาย้อนเวลาไปกรุงรัตนโกสินทร์" — สร้างภาพบ้านเมืองแต่ละยุคจาก ร.1 ถึงปัจจุบัน แบบ Time-lapse',
+      photo: 'ภาพ AI วาดกรุงเทพฯ ในมุมมองของแต่ละรัชกาล — เทียบภาพเก่า vs AI สร้างใหม่',
+      desc: 'ถ้า AI พาย้อนเวลาไปสมัย ร.1 คุณจะทำอะไรเป็นอย่างแรก?\n\nกรุงรัตนโกสินทร์ 242 ปี จากท้องทุ่งถึงมหานคร 🇹🇭\n\nน้อมรำลึกในพระมหากรุณาธิคุณ 🙏\n\n#วันจักรี #กรุงรัตนโกสินทร์ #ประวัติศาสตร์ไทย #AI' },
+    { month: 3, day: 13, name: 'วันสงกรานต์',
+      clip: 'คลิป "สงกรานต์ทั่วโลกถ้าสร้างด้วย AI" — AI วาดสงกรานต์ที่ญี่ปุ่น/อเมริกา/แอฟริกา จะเป็นยังไง?',
+      photo: 'Carousel: AI สร้างชุดไทยสงกรานต์ 5 แบบ ตั้งแต่แบบดั้งเดิมถึงแบบ Cyberpunk สงกรานต์ปี 3000',
+      desc: 'ถ้าฝรั่งจัดสงกรานต์ มันจะเป็นแบบไหน? 🤔💦\n\nAI ลองวาดให้แล้ว... ผลคือมีปืนฉีดน้ำขนาดรถถัง 😂\n\nสงกรานต์ไทยยังไงก็ที่ 1 🇹🇭🌺\nสนุก ปลอดภัย เคารพผู้อื่นนะ!\n\n#สงกรานต์ #Songkran #AI #เล่นน้ำ #ปีใหม่ไทย' },
+    { month: 3, day: 22, name: 'วันคุ้มครองโลก (Earth Day)',
+      clip: 'คลิป "AI วาดโลก 100 ปีข้างหน้า" — 2 เวอร์ชัน: โลกที่เราดูแล vs โลกที่เราไม่แคร์ เปรียบเทียบแบบสะเทือนใจ',
+      photo: 'ภาพ AI สร้าง "โลกทำจากขยะ" vs "โลกที่เต็มไปด้วยต้นไม้" วางคู่กันให้เลือกว่าอยากอยู่โลกไหน',
+      desc: 'ภาพซ้าย vs ภาพขวา คุณอยากอยู่โลกไหน? 🌍\n\nAI วาดอนาคตโลกให้ 2 แบบ\nแบบที่เราดูแล กับแบบที่เราไม่สนใจ\n\nผลต่างมันชัดมาก...\n\nเริ่มจากสิ่งเล็กๆ วันนี้ยังไม่สาย 💚\n\n#EarthDay #รักษ์โลก #AI #สิ่งแวดล้อม #โลกร้อน' },
+    { month: 4, day: 1, name: 'วันแรงงาน',
+      clip: 'คลิป "อาชีพของคุณในสายตา AI" — ป้อนอาชีพแล้วให้ AI วาดภาพอาชีพนั้นในสไตล์ Superhero/Anime/Renaissance',
+      photo: 'Carousel: AI วาด 5 อาชีพที่คนมักมองข้าม (แม่บ้าน/รปภ./คนขับรถ/คนเก็บขยะ/ชาวนา) ในสไตล์ฮีโร่',
+      desc: 'ทุกอาชีพคือฮีโร่ 🦸\n\nแต่เรามักลืมขอบคุณคนที่ทำให้ชีวิตเราง่ายขึ้นทุกวัน\n\nAI วาดให้ดูว่า ถ้าพวกเขาเป็นซูเปอร์ฮีโร่ จะเท่แค่ไหน 💪\n\nTag คนทำงานหนักที่คุณอยากขอบคุณ 👇\n\n#วันแรงงาน #LaborDay #AI #ขอบคุณ' },
+    { month: 4, day: 4, name: 'วันฉัตรมงคล',
+      clip: 'คลิป "AI พาชมพระราชพิธี" — สร้างภาพบรรยากาศพระราชพิธีสำคัญในรูปแบบภาพวาดสีน้ำ',
+      photo: 'ภาพ AI วาดสไตล์ภาพวาดไทยประยุกต์ ธีมสีเหลืองทอง แสดงความจงรักภักดี',
+      desc: 'ทรงพระเจริญ 💛🙏\n\nวันฉัตรมงคล น้อมสำนึกในพระมหากรุณาธิคุณ\nร่วมทำความดีด้วยหัวใจ\n\n#วันฉัตรมงคล #ทรงพระเจริญ #จิตอาสา' },
+    { month: 5, day: 3, name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระราชินี',
+      clip: 'คลิป AI สร้างภาพดอกมะลิในรูปแบบศิลปะไทยร่วมสมัย ประกอบเพลงเบาๆ',
+      photo: 'ภาพ AI วาดดอกมะลิสไตล์ศิลปะไทยประยุกต์ ธีมสีม่วง + ข้อความถวายพระพร',
+      desc: 'ทรงพระเจริญ 💜🙏\n\nด้วยเกล้าด้วยกระหม่อม ขอเดชะ\n\n#วันเฉลิมพระชนมพรรษา #สมเด็จพระราชินี #ทรงพระเจริญ' },
+    { month: 5, day: 5, name: 'วันสิ่งแวดล้อมโลก',
+      clip: 'คลิป "1 วันของขยะพลาสติกในไทย" — AI สร้าง Visualization ขยะพลาสติกที่คนไทยใช้ใน 1 วัน กองรวมกันจะใหญ่แค่ไหน',
+      photo: 'ภาพ AI สร้าง "สัตว์ทะเลทำจากขยะ" — ปลาวาฬ/เต่า/ปลาโลมา ที่ร่างกายเป็นขวดพลาสติก',
+      desc: 'คนไทยใช้ถุงพลาสติก 8 ใบ/วัน 🛍️\n\nรวมทั้งประเทศ = 560 ล้านใบ/วัน\nกองรวมกันสูงกว่าตึกใบหยก\n\nAI ลองวาดให้ดู... ดูแล้วรู้สึกยังไง? 😶\n\nเปลี่ยนได้ เริ่มจากพกถุงผ้า 1 ใบ 💚\n\n#วันสิ่งแวดล้อมโลก #ลดพลาสติก #AI #GreenLiving' },
+    { month: 6, day: 28, name: 'วันเฉลิมพระชนมพรรษา ร.10',
+      clip: 'คลิป AI สร้างภาพจิตอาสาทำความดี ธีมสีเหลือง ในรูปแบบภาพวาดสวยงาม',
+      photo: 'ภาพ AI วาดสไตล์ศิลปะไทย ธีมสีเหลืองทอง ข้อความถวายพระพรอย่างสง่างาม',
+      desc: 'ทรงพระเจริญ 💛🙏\n\nด้วยเกล้าด้วยกระหม่อม ขอเดชะ\nร่วมทำความดีถวายเป็นพระราชกุศล\n\n#ทรงพระเจริญ #จิตอาสา #วันเฉลิมพระชนมพรรษา' },
+    { month: 7, day: 12, name: 'วันแม่แห่งชาติ',
+      clip: 'คลิป "AI วาดแม่คุณจากคำบอกเล่า" — ให้คนดูบรรยายแม่ตัวเอง 3 คำ แล้ว AI วาดออกมา ดูว่าเหมือนไหม',
+      photo: 'Carousel: AI วาด "มือแม่" ในแต่ละช่วงชีวิต — มือที่อุ้ม/มือที่จับเดิน/มือที่ปล่อย/มือที่รอ',
+      desc: 'บอก AI ว่าแม่คุณเป็นคนยังไง 3 คำ\nAI วาดออกมาแบบนี้...\n\nแม่ทุกคนสวยที่สุดในสายตาลูก 💙👩‍👧‍👦\n\nวันนี้โทรหาแม่หรือยัง?\nไม่ต้องรอวันแม่ก็บอกรักได้ ☎️\n\n#วันแม่ #MothersDay #รักแม่ #AI #แม่คือทุกอย่าง' },
+    { month: 8, day: 28, name: 'วันสารทไทย',
+      clip: 'คลิป "AI พาชิมขนมไทยโบราณ" — สร้างภาพขนมกระยาสารทและขนมไทยหายากในสไตล์ภาพถ่ายอาหาร Michelin',
+      photo: 'Carousel: AI วาดขนมไทย 5 อย่าง ในสไตล์ Fine Dining / วางจานแบบร้านหรู',
+      desc: 'ขนมไทยถ้าเสิร์ฟแบบ Fine Dining จะหน้าตาเป็นยังไง? 🍡✨\n\nAI ลองจัดให้ ผลคือ...\nขนมกระยาสารทราคาจาน 1,500 บาท 😂\n\nขนมไทยไม่แพ้ชาติใดในโลก 🇹🇭\n\n#วันสารทไทย #ขนมไทย #AI #FineDining' },
+    { month: 9, day: 13, name: 'วันคล้ายวันสวรรคต ร.9',
+      clip: 'คลิป AI สร้างภาพพระราชกรณียกิจ ในรูปแบบภาพวาดสีน้ำมัน น้อมรำลึกถึงพระมหากรุณาธิคุณ',
+      photo: 'ภาพ AI วาดแสงเทียนรำลึก สไตล์ภาพวาดสีน้ำ ธีมโทนเหลือง-ขาวดำ สงบ สง่า',
+      desc: 'น้อมรำลึกในพระมหากรุณาธิคุณอันหาที่สุดมิได้ 🖤💛\n\nเราจะทำความดีตามรอยพ่อ 🙏\n\n#วันคล้ายวันสวรรคต #รัชกาลที่9 #พ่อของแผ่นดิน' },
+    { month: 9, day: 23, name: 'วันปิยมหาราช',
+      clip: 'คลิป "AI พาย้อนกรุงสยาม สมัย ร.5" — สร้างภาพกรุงเทพฯ ยุค ร.5 vs ปัจจุบัน แบบ Split Screen',
+      photo: 'Carousel: AI วาดสถานที่สำคัญสมัย ร.5 เทียบกับปัจจุบัน (ถนนเจริญกรุง/พระที่นั่งจักรี/สถานีรถไฟ)',
+      desc: 'กรุงเทพ สมัย ร.5 vs ตอนนี้ 🏛️\n\nAI ลองวาดให้ดู... เปลี่ยนไปมากแค่ไหน\n\nพระราชกรณียกิจด้านการปรับปรุงบ้านเมือง\nยังส่งผลถึงทุกวันนี้ 🇹🇭\n\nน้อมรำลึกถึงพระปิยมหาราช 🌹🙏\n\n#วันปิยมหาราช #รัชกาลที่5 #ประวัติศาสตร์ไทย #AI' },
+    { month: 9, day: 31, name: 'Halloween',
+      clip: 'คลิป "ผีไทย vs ผีฝรั่ง สร้างด้วย AI" — AI วาดนางนาก/กระสือ/แม่นาค ในสไตล์ Hollywood แล้ววาดผีฝรั่งในสไตล์ไทย',
+      photo: 'Carousel: AI วาด 5 ผีไทยในสไตล์อนิเมะญี่ปุ่น (นางนาก/กระสือ/กุมารทอง/ผีปอบ/นางตานี)',
+      desc: 'ถ้าผีไทยเป็นตัวละครอนิเมะ จะหน้าตาเป็นแบบนี้ 😱👻\n\nAI วาดนางนากเวอร์ชันอนิเมะ...\nน่ากลัวหรือน่ารัก ตัดสินเอง 🫣\n\nตัวไหนน่ากลัวสุด? คอมเมนต์มา 👇\n\n#Halloween #ผีไทย #AI #Anime #อนิเมะ #Spooky' },
+    { month: 10, day: 11, name: '11.11 วันคนโสด',
+      clip: 'คลิป "AI วาดแฟนในฝันของคุณ" — ให้คนดู describe แฟนในฝัน แล้ว AI วาดออกมา ผลลัพธ์ตลกมาก',
+      photo: 'Carousel: AI วาด "ของที่โสดต้องมี" 5 อย่าง แบบ Luxury Edition (หมอนข้างหลุยส์/แมวใส่สูท/Netflix VIP)',
+      desc: 'โสดไม่ได้แปลว่าเหงา โสดแปลว่า... ไม่ต้องแชร์ Netflix 😎\n\nAI วาด Starter Pack คนโสด 2026:\n✅ หมอนข้างตัวโปรด\n✅ แมว (หรือหมา)\n✅ บัตรเครดิตไม่มีคนถาม\n\n11.11 นี้ซื้อให้ตัวเองเต็มที่! 🛒💸\n\n#วันคนโสด #1111 #โสดและสุข #AI #SelfCare' },
+    { month: 10, day: 15, name: 'วันลอยกระทง (ประมาณ)',
+      clip: 'คลิป "กระทงจากอนาคต" — AI ออกแบบกระทงปี 3000 (กระทงโดรน/กระทงโฮโลแกรม/กระทงจากดาวอังคาร)',
+      photo: 'Carousel: AI วาดกระทงจาก 5 ประเทศถ้าทุกชาติมีลอยกระทง (ญี่ปุ่น/อเมริกา/อียิปต์/อิตาลี/เกาหลี)',
+      desc: 'ถ้าทุกประเทศมีลอยกระทง กระทงแต่ละชาติจะหน้าตาเป็นแบบไหน? 🌍🏮\n\nAI ออกแบบให้แล้ว...\nกระทงอเมริกา = ทำจากเบอร์เกอร์ 🍔\nกระทงญี่ปุ่น = ทำจากซูชิ 🍣\n\nประเทศไหนเจ๋งสุด? โหวตมา 👇\n\n#ลอยกระทง #LoyKrathong #AI #วัฒนธรรมไทย' },
+    { month: 11, day: 5, name: 'วันพ่อแห่งชาติ',
+      clip: 'คลิป "สิ่งที่พ่อไม่เคยพูด แต่ AI รู้" — AI สร้างภาพ + ข้อความสิ่งที่พ่อคิดแต่ไม่เคยบอก (คิดถึง/เป็นห่วง/ภูมิใจ)',
+      photo: 'Carousel: AI วาด "มือพ่อ" ในแต่ละอาชีพ — มือช่าง/มือชาวนา/มือพ่อค้า/มือคนขับรถ แต่ละคู่มือเล่าเรื่องได้',
+      desc: 'พ่อไม่เคยพูดว่ารัก แต่...\n\n- ตื่นตี 4 ทุกวันเพื่อไปทำงาน\n- กินข้าวเหลือแล้วบอก "อิ่มแล้ว"\n- ไม่เคยซื้ออะไรให้ตัวเอง\n\nAI วาดมือพ่อ ดูแล้วใครน้ำตาซึม? 😭💛\n\nรักพ่อ บอกพ่อวันนี้เลย ☎️\n\n#วันพ่อ #FathersDay #รักพ่อ #AI #พ่อคือทุกอย่าง' },
+    { month: 11, day: 10, name: 'วันรัฐธรรมนูญ',
+      clip: 'คลิป "AI อธิบายรัฐธรรมนูญแบบเข้าใจง่าย" — สร้าง Infographic เคลื่อนไหวเล่าสิทธิพื้นฐาน 5 ข้อ ที่คนไทยควรรู้',
+      photo: 'Carousel: AI สร้าง Infographic "5 สิทธิพื้นฐานที่คนไทยมี แต่ไม่ค่อยรู้" ภาพสวยอ่านง่าย',
+      desc: 'คุณรู้ไหม? คนไทยมีสิทธิ์ทำ 5 อย่างนี้ได้ ตามรัฐธรรมนูญ 📜\n\nแต่คนส่วนใหญ่ไม่เคยรู้ข้อ 3...\n\nswipe ดู 👉 แล้วจะเซอร์ไพรส์\n\nรู้สิทธิ = ปกป้องตัวเองได้ 💪🇹🇭\n\n#วันรัฐธรรมนูญ #สิทธิพลเมือง #AI #ความรู้' },
+    { month: 11, day: 25, name: 'วันคริสต์มาส',
+      clip: 'คลิป "Santa แบบไทยๆ" — AI วาดซานต้าใส่ผ้าขาวม้า/ขี่ช้าง/แจกข้าวเหนียวหมูปิ้ง แทนกวางเรนเดียร์',
+      photo: 'Carousel: AI วาดต้นคริสต์มาสจากของไทย 5 แบบ (ต้นทำจากมะม่วง/ทุเรียน/ส้มตำ/มวยไทย/ตุ๊กตุ๊ก)',
+      desc: 'ถ้าซานต้าเป็นคนไทย เขาจะแจกอะไรวันคริสต์มาส? 🎅🇹🇭\n\nAI บอกว่า:\n🎁 ข้าวเหนียวหมูปิ้ง\n🎁 ชานม\n🎁 วันหยุดเพิ่ม 1 วัน\n\nของขวัญข้อ 3 นี่ ขอจริงๆ ได้ไหม 😂\n\nMerry Christmas! 🎄✨\n\n#MerryChristmas #คริสต์มาส #ซานต้าไทย #AI' },
+    { month: 11, day: 31, name: 'วันสิ้นปี',
+      clip: 'คลิป "AI สรุปปีนี้ใน 60 วินาที" — รวม Moment สำคัญของปีเป็นภาพ AI + เพลง Cinematic ปิดท้ายด้วย Countdown',
+      photo: 'Carousel: AI วาด "สิ่งที่ทุกคนอยากทิ้งไว้ในปีนี้" vs "สิ่งที่อยากเอาไปปีหน้า" — ให้คนดูเลือก',
+      desc: 'ปีนี้ของคุณเป็นยังไง? AI สรุปให้แล้ว 📊\n\nสิ่งที่ควรทิ้งไว้ปีนี้:\n❌ นิสัยผัดวันประกันพรุ่ง\n❌ คนที่ไม่ใช่\n❌ ความคิดว่า "เริ่มพรุ่งนี้"\n\nสิ่งที่ต้องเอาไปปีหน้า:\n✅ ความกล้า\n✅ คนที่อยู่ข้างเรา\n✅ ความฝัน\n\n3...2...1... 🎆🥂 Happy New Year!\n\n#HappyNewYear #สวัสดีปีใหม่ #Countdown #AI' }
+];
+
+function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function loadData() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    return { contents: [], events: [] };
+}
+
+function saveData(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+}
+
+function formatDateShort(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()];
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 2500);
+}
+
+window.copyDesc = function(el) {
+    var text = el.dataset.desc || el.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        showToast('คัดลอก Description แล้ว!');
+    }).catch(function() {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('คัดลอก Description แล้ว!');
+    });
+};
+
+// PIN System
+(function initPinSystem() {
+    var overlay = document.getElementById('pinOverlay');
+    var savedPin = localStorage.getItem('teamflow_pin');
+    if (!savedPin) {
+        document.getElementById('pinSetup').style.display = '';
+        document.getElementById('pinLogin').style.display = 'none';
+    } else {
+        document.getElementById('pinSetup').style.display = 'none';
+        document.getElementById('pinLogin').style.display = '';
+    }
+    setupPinAutoFocus('setupPinInputs');
+    setupPinAutoFocus('confirmPinInputs');
+    setupPinAutoFocus('loginPinInputs');
+})();
+
+function setupPinAutoFocus(containerId) {
+    var inputs = document.getElementById(containerId).querySelectorAll('input');
+    inputs.forEach(function(inp, i) {
+        inp.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value && i < inputs.length - 1) inputs[i + 1].focus();
+        });
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && i > 0) inputs[i - 1].focus();
+            if (e.key === 'Enter') {
+                if (containerId === 'loginPinInputs') submitLoginPin();
+                else if (containerId === 'confirmPinInputs') submitSetupPin();
+            }
+        });
+    });
+    if (inputs[0]) inputs[0].focus();
+}
+
+function getPinValue(containerId) {
+    var inputs = document.getElementById(containerId).querySelectorAll('input');
+    var pin = '';
+    inputs.forEach(function(inp) { pin += inp.value; });
+    return pin;
+}
+
+function clearPinInputs(containerId) {
+    var inputs = document.getElementById(containerId).querySelectorAll('input');
+    inputs.forEach(function(inp) { inp.value = ''; });
+    if (inputs[0]) inputs[0].focus();
+}
+
+function submitSetupPin() {
+    var pin = getPinValue('setupPinInputs');
+    var confirm = getPinValue('confirmPinInputs');
+    var err = document.getElementById('setupError');
+    if (pin.length < 4) { err.textContent = 'กรุณาใส่ PIN 4 หลัก'; return; }
+    if (pin !== confirm) { err.textContent = 'รหัส PIN ไม่ตรงกัน'; clearPinInputs('confirmPinInputs'); return; }
+    localStorage.setItem('teamflow_pin', pin);
+    document.getElementById('pinOverlay').style.display = 'none';
+    showToast('ตั้งรหัส PIN สำเร็จ!');
+}
+
+function submitLoginPin() {
+    var pin = getPinValue('loginPinInputs');
+    var savedPin = localStorage.getItem('teamflow_pin');
+    var err = document.getElementById('loginError');
+    if (pin.length < 4) { err.textContent = 'กรุณาใส่ PIN 4 หลัก'; return; }
+    if (pin !== savedPin) { err.textContent = 'รหัส PIN ไม่ถูกต้อง'; clearPinInputs('loginPinInputs'); return; }
+    document.getElementById('pinOverlay').style.display = 'none';
+}
+
+function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('teamflow_theme', isDark ? 'light' : 'dark');
+    var btn = document.getElementById('themeToggle');
+    btn.innerHTML = isDark ? '<i class="fas fa-moon"></i> <span>โหมดมืด</span>' : '<i class="fas fa-sun"></i> <span>โหมดสว่าง</span>';
+}
+(function() {
+    var saved = localStorage.getItem('teamflow_theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        var btn = document.getElementById('themeToggle');
+        if (btn) btn.innerHTML = '<i class="fas fa-sun"></i> <span>โหมดสว่าง</span>';
+    }
+})();
+
+let data = loadData();
+let quill = null;
+let currentCalMonth, currentCalYear, selectedCalDate;
+
+document.querySelectorAll('.nav-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        navigateTo(item.dataset.page);
+    });
+});
+
+function navigateTo(page) {
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    document.querySelector('.nav-item[data-page="' + page + '"]').classList.add('active');
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('page-' + page).classList.add('active');
+    if (page === 'dashboard') renderDashboard();
+    if (page === 'content') renderContentList();
+    if (page === 'workflow') renderKanban();
+    if (page === 'calendar') renderCalendar();
+    document.getElementById('sidebar').classList.remove('open');
+}
+
+document.getElementById('menuToggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('open');
+});
+
+function renderDashboard() {
+    data = loadData();
+    var now = new Date();
+    var dayNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    document.getElementById('dashboard-date').textContent =
+        'วัน' + dayNames[now.getDay()] + 'ที่ ' + now.getDate() + ' ' + THAI_MONTHS[now.getMonth()] + ' ' + (now.getFullYear() + 543);
+    document.getElementById('stat-total').textContent = data.contents.length;
+    document.getElementById('stat-waiting').textContent = data.contents.filter(function(c) { return c.status === 'waiting_clip'; }).length;
+    document.getElementById('stat-clip').textContent = data.contents.filter(function(c) { return c.status === 'making_clip'; }).length;
+    document.getElementById('stat-posted').textContent = data.contents.filter(function(c) { return c.status === 'posted'; }).length;
+
+    var recent = data.contents.slice().sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); }).slice(0, 5);
+    var recentEl = document.getElementById('recent-items');
+    if (recent.length === 0) {
+        recentEl.innerHTML = '<div class="empty-state">ยังไม่มีเนื้อเรื่อง</div>';
+    } else {
+        recentEl.innerHTML = recent.map(function(c) {
+            return '<div class="recent-item" onclick="openContentForEdit(\'' + c.id + '\')">' +
+                '<div class="dot" style="background:' + STATUS_COLORS[c.status] + '"></div>' +
+                '<span class="item-title">' + esc(c.title) + '</span>' +
+                '<span class="item-date">' + formatDateShort(c.updatedAt) + '</span></div>';
+        }).join('');
+    }
+
+    var today = now.toISOString().split('T')[0];
+    var upcoming = data.contents
+        .filter(function(c) { return c.postDate && c.postDate >= today && c.status !== 'posted'; })
+        .sort(function(a, b) { return a.postDate.localeCompare(b.postDate); }).slice(0, 5);
+    var upcomingEvts = data.events
+        .filter(function(e) { return e.date >= today && e.type === 'post_schedule'; })
+        .sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 5);
+
+    var allUpcoming = upcoming.map(function(c) { return { date: c.postDate, title: c.title }; })
+        .concat(upcomingEvts.map(function(e) { return { date: e.date, title: e.title }; }))
+        .sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 5);
+
+    var upEl = document.getElementById('upcoming-posts');
+    if (allUpcoming.length === 0) {
+        upEl.innerHTML = '<div class="empty-state">ไม่มีโพสต์ที่จะถึง</div>';
+    } else {
+        upEl.innerHTML = allUpcoming.map(function(u) {
+            return '<div class="upcoming-item"><span class="up-date">' + formatDateShort(u.date) + '</span><span class="up-title">' + esc(u.title) + '</span></div>';
+        }).join('');
+    }
+    renderHolidaysForMonth(now.getMonth(), document.getElementById('dashboard-holidays'));
+}
+
+function renderHolidaysForMonth(month, container) {
+    var holidays = IMPORTANT_DATES.filter(function(h) { return h.month === month; });
+    if (holidays.length === 0) {
+        container.innerHTML = '<div class="empty-state">ไม่มีวันสำคัญเดือนนี้</div>';
+    } else {
+        container.innerHTML = holidays.map(function(h) {
+            return '<div class="holiday-item"><span class="holiday-date">' + h.day + ' ' + THAI_MONTHS_SHORT[h.month] + '</span><div><div class="holiday-name">' + esc(h.name) + '</div></div></div>';
+        }).join('');
+    }
+}
+
+function switchContentTab(tab) {
+    currentContentTab = tab;
+    document.querySelectorAll('.content-tab').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
+    var filterRow = document.querySelector('.content-toolbar');
+    if (filterRow) filterRow.style.display = tab === 'archive' ? 'none' : '';
+    renderContentList();
+}
+
+function renderContentList() {
+    data = loadData();
+    var allContents = data.contents;
+    var activeCount = allContents.filter(function(c) { return c.status !== 'posted'; }).length;
+    var archiveCount = allContents.filter(function(c) { return c.status === 'posted'; }).length;
+    document.getElementById('tab-count-active').textContent = activeCount;
+    document.getElementById('tab-count-archive').textContent = archiveCount;
+
+    var search = document.getElementById('content-search').value.toLowerCase();
+    var statusFilter = document.getElementById('content-filter-status').value;
+    var memberFilter = document.getElementById('content-filter-member').value;
+    var filtered = allContents.filter(function(c) {
+        if (currentContentTab === 'active' && c.status === 'posted') return false;
+        if (currentContentTab === 'archive' && c.status !== 'posted') return false;
+        if (search && c.title.toLowerCase().indexOf(search) === -1) return false;
+        if (currentContentTab === 'active' && statusFilter !== 'all' && c.status !== statusFilter) return false;
+        if (memberFilter !== 'all' && c.assignedTo !== memberFilter) return false;
+        return true;
+    });
+    filtered.sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+    var list = document.getElementById('content-list');
+    var emptyMsg = currentContentTab === 'archive'
+        ? '<div class="empty-state" style="padding:40px"><i class="fas fa-archive" style="font-size:2em;opacity:.3"></i><br>ยังไม่มีเนื้อเรื่องที่โพสต์แล้ว</div>'
+        : '<div class="empty-state" style="padding:40px">ไม่มีเนื้อเรื่อง — กด "สร้างเนื้อเรื่องใหม่" เพื่อเริ่มต้น</div>';
+    if (filtered.length === 0) {
+        list.innerHTML = emptyMsg;
+    } else {
+        list.innerHTML = filtered.map(function(c) {
+            return '<div class="content-card" onclick="openContentForEdit(\'' + c.id + '\')">' +
+                '<div class="cc-status" style="background:' + STATUS_COLORS[c.status] + '"></div>' +
+                '<div class="cc-info"><div class="cc-title">' + esc(c.title) + '</div>' +
+                '<div class="cc-meta"><span><i class="fas fa-user"></i> ' + esc(c.assignedTo) + '</span>' +
+                '<span><i class="fas fa-clock"></i> ' + formatDate(c.updatedAt) + '</span>' +
+                (c.postDate ? '<span><i class="fas fa-calendar"></i> โพสต์: ' + formatDate(c.postDate) + '</span>' : '') +
+                '</div></div><span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span></div>';
+        }).join('');
+    }
+}
+
+document.getElementById('content-search').addEventListener('input', renderContentList);
+document.getElementById('content-filter-status').addEventListener('change', renderContentList);
+document.getElementById('content-filter-member').addEventListener('change', renderContentList);
+
+function initQuill() {
+    if (quill) return;
+    quill = new Quill('#editor-container', {
+        theme: 'snow',
+        placeholder: 'เขียนเนื้อเรื่องที่นี่...',
+        modules: {
+            toolbar: [
+                [{ header: [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ color: [] }, { background: [] }],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['blockquote', 'link'],
+                ['clean']
+            ]
+        }
+    });
+}
+
+document.getElementById('btn-new-content').addEventListener('click', function() { openContentModal(); });
+
+function openContentModal(content) {
+    initQuill();
+    var modal = document.getElementById('modal-content');
+    var titleEl = document.getElementById('modal-content-title');
+    var deleteBtn = document.getElementById('btn-delete-content');
+    if (content) {
+        titleEl.textContent = 'แก้ไขเนื้อเรื่อง';
+        document.getElementById('content-id').value = content.id;
+        document.getElementById('content-title').value = content.title;
+        document.getElementById('content-assigned').value = content.assignedTo;
+        document.getElementById('content-status').value = content.status;
+        document.getElementById('content-post-date').value = content.postDate || '';
+        quill.root.innerHTML = content.content || '';
+        deleteBtn.style.display = 'inline-flex';
+    } else {
+        titleEl.textContent = 'สร้างเนื้อเรื่องใหม่';
+        document.getElementById('content-id').value = '';
+        document.getElementById('content-title').value = '';
+        document.getElementById('content-assigned').value = 'พลอย';
+        document.getElementById('content-status').value = 'waiting_clip';
+        document.getElementById('content-post-date').value = '';
+        quill.root.innerHTML = '';
+        deleteBtn.style.display = 'none';
+    }
+    modal.classList.add('show');
+}
+
+window.openContentForEdit = function(id) {
+    data = loadData();
+    var content = data.contents.find(function(c) { return c.id === id; });
+    if (content) {
+        navigateTo('content');
+        setTimeout(function() { openContentModal(content); }, 100);
+    }
+};
+
+document.getElementById('btn-save-content').addEventListener('click', function() {
+    var id = document.getElementById('content-id').value;
+    var title = document.getElementById('content-title').value.trim();
+    if (!title) { showToast('กรุณาใส่ชื่อเรื่อง'); return; }
+    data = loadData();
+    var now = new Date().toISOString();
+    if (id) {
+        var idx = data.contents.findIndex(function(c) { return c.id === id; });
+        if (idx >= 0) {
+            data.contents[idx].title = title;
+            data.contents[idx].content = quill.root.innerHTML;
+            data.contents[idx].assignedTo = document.getElementById('content-assigned').value;
+            data.contents[idx].status = document.getElementById('content-status').value;
+            data.contents[idx].postDate = document.getElementById('content-post-date').value;
+            data.contents[idx].updatedAt = now;
+        }
+    } else {
+        data.contents.push({
+            id: genId(), title: title, content: quill.root.innerHTML,
+            assignedTo: document.getElementById('content-assigned').value,
+            status: document.getElementById('content-status').value,
+            postDate: document.getElementById('content-post-date').value,
+            createdAt: now, updatedAt: now
+        });
+    }
+    saveData(data);
+    closeModal('modal-content');
+    renderContentList();
+    showToast(id ? 'บันทึกเรียบร้อย' : 'สร้างเนื้อเรื่องใหม่แล้ว');
+});
+
+document.getElementById('btn-delete-content').addEventListener('click', function() {
+    var id = document.getElementById('content-id').value;
+    if (!id) return;
+    if (!confirm('ต้องการลบเนื้อเรื่องนี้?')) return;
+    data = loadData();
+    data.contents = data.contents.filter(function(c) { return c.id !== id; });
+    saveData(data);
+    closeModal('modal-content');
+    renderContentList();
+    showToast('ลบเนื้อเรื่องแล้ว');
+});
+
+document.getElementById('btn-cancel-content').addEventListener('click', function() { closeModal('modal-content'); });
+document.getElementById('close-content-modal').addEventListener('click', function() { closeModal('modal-content'); });
+
+function renderKanban() {
+    data = loadData();
+    var statuses = ['waiting_clip', 'making_clip', 'ready', 'posted'];
+    statuses.forEach(function(status) {
+        var items = data.contents.filter(function(c) { return c.status === status; });
+        var col = document.getElementById('col-' + status);
+        document.getElementById('count-' + status).textContent = items.length;
+        if (items.length === 0) {
+            col.innerHTML = '<div class="empty-state">ว่าง</div>';
+        } else {
+            col.innerHTML = items.map(function(c) {
+                var color = MEMBER_COLORS[c.assignedTo] || '#999';
+                var initial = c.assignedTo ? c.assignedTo.charAt(0) : '?';
+                return '<div class="kanban-card" ondblclick="openContentForEdit(\'' + c.id + '\')">' +
+                    '<div class="kc-title">' + esc(c.title) + '</div>' +
+                    '<div class="kc-meta"><div class="kc-avatar" style="background:' + color + '">' + initial + '</div>' +
+                    '<span>' + (c.postDate ? formatDateShort(c.postDate) : '') + '</span></div>' +
+                    '<div class="kc-actions"><button onclick="event.stopPropagation();openStatusModal(\'' + c.id + '\')">' +
+                    '<i class="fas fa-exchange-alt"></i> เปลี่ยนสถานะ</button>' +
+                    '<button onclick="event.stopPropagation();openContentForEdit(\'' + c.id + '\')">' +
+                    '<i class="fas fa-edit"></i> แก้ไข</button></div></div>';
+            }).join('');
+        }
+    });
+}
+
+window.openStatusModal = function(id) {
+    data = loadData();
+    var content = data.contents.find(function(c) { return c.id === id; });
+    if (!content) return;
+    document.getElementById('status-item-title').textContent = content.title;
+    document.getElementById('new-status').value = content.status;
+    document.getElementById('new-assigned').value = content.assignedTo;
+    document.getElementById('modal-status').dataset.contentId = id;
+    document.getElementById('modal-status').classList.add('show');
+};
+
+document.getElementById('btn-save-status').addEventListener('click', function() {
+    var id = document.getElementById('modal-status').dataset.contentId;
+    data = loadData();
+    var content = data.contents.find(function(c) { return c.id === id; });
+    if (content) {
+        content.status = document.getElementById('new-status').value;
+        content.assignedTo = document.getElementById('new-assigned').value;
+        content.updatedAt = new Date().toISOString();
+        saveData(data);
+    }
+    closeModal('modal-status');
+    renderKanban();
+    showToast('เปลี่ยนสถานะแล้ว');
+});
+
+document.getElementById('btn-cancel-status').addEventListener('click', function() { closeModal('modal-status'); });
+document.getElementById('close-status-modal').addEventListener('click', function() { closeModal('modal-status'); });
+
+function initCalendar() {
+    var now = new Date();
+    currentCalMonth = now.getMonth();
+    currentCalYear = now.getFullYear();
+    selectedCalDate = null;
+    renderCalendar();
+}
+
+document.getElementById('cal-prev').addEventListener('click', function() {
+    currentCalMonth--;
+    if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+    renderCalendar();
+});
+
+document.getElementById('cal-next').addEventListener('click', function() {
+    currentCalMonth++;
+    if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+    renderCalendar();
+});
+
+document.getElementById('cal-today').addEventListener('click', function() {
+    var now = new Date();
+    currentCalMonth = now.getMonth();
+    currentCalYear = now.getFullYear();
+    selectedCalDate = currentCalYear + '-' + String(currentCalMonth + 1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+    renderCalendar();
+});
+
+function renderCalendar() {
+    data = loadData();
+    document.getElementById('cal-month-year').textContent = THAI_MONTHS[currentCalMonth] + ' ' + (currentCalYear + 543);
+    var firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+    var daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+    var daysInPrev = new Date(currentCalYear, currentCalMonth, 0).getDate();
+    var today = new Date();
+    var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var html = '';
+    var dayCount = 1;
+    var nextMonthDay = 1;
+    var totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+    for (var i = 0; i < totalCells; i++) {
+        var dayNum, dateStr, classes = 'cal-day';
+        if (i < firstDay) {
+            dayNum = daysInPrev - firstDay + i + 1;
+            var pm = currentCalMonth === 0 ? 11 : currentCalMonth - 1;
+            var py = currentCalMonth === 0 ? currentCalYear - 1 : currentCalYear;
+            dateStr = py + '-' + String(pm+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+            classes += ' other-month';
+        } else if (dayCount <= daysInMonth) {
+            dayNum = dayCount;
+            dateStr = currentCalYear + '-' + String(currentCalMonth+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+            if (dateStr === todayStr) classes += ' today';
+            if (dateStr === selectedCalDate) classes += ' selected';
+            dayCount++;
+        } else {
+            dayNum = nextMonthDay++;
+            var nm = currentCalMonth === 11 ? 0 : currentCalMonth + 1;
+            var ny = currentCalMonth === 11 ? currentCalYear + 1 : currentCalYear;
+            dateStr = ny + '-' + String(nm+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+            classes += ' other-month';
+        }
+        var dayEvents = getEventsForDate(dateStr);
+        var holidays = getHolidaysForDate(dateStr);
+        var scheduledContents = data.contents.filter(function(c) { return c.postDate === dateStr; });
+        if (holidays.length > 0) classes += ' has-holiday';
+        if (scheduledContents.length > 0) classes += ' has-content';
+        if (dayEvents.length > 0) classes += ' has-event';
+        var eventsHtml = '';
+        holidays.forEach(function(h) { eventsHtml += '<div class="cal-event-dot type-holiday">' + esc(h.name) + '</div>'; });
+        dayEvents.forEach(function(ev) { eventsHtml += '<div class="cal-event-dot type-' + ev.type + '">' + esc(ev.title) + '</div>'; });
+        scheduledContents.forEach(function(c) {
+            eventsHtml += '<div class="cal-event-dot type-content" draggable="true" data-content-id="' + c.id + '" title="' + esc(c.title) + ' — ' + (STATUS_LABELS[c.status] || c.status) + '">' + esc(c.title) + '</div>';
+        });
+        html += '<div class="' + classes + '" data-date="' + dateStr + '" onclick="selectCalDate(\'' + dateStr + '\')">' +
+            '<div class="day-number">' + dayNum + '</div><div class="day-events">' + eventsHtml + '</div></div>';
+    }
+    document.getElementById('cal-body').innerHTML = html;
+    initCalendarDragDrop();
+    renderHolidaysForMonth(currentCalMonth, document.getElementById('cal-holidays'));
+    renderSuggestions();
+    renderDayEvents();
+}
+
+function initCalendarDragDrop() {
+    var calBody = document.getElementById('cal-body');
+    calBody.addEventListener('dragstart', function(e) {
+        var dot = e.target.closest('.cal-event-dot[data-content-id]');
+        if (!dot) return;
+        e.dataTransfer.setData('text/plain', dot.dataset.contentId);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(function() { dot.classList.add('dragging'); }, 0);
+    });
+    calBody.addEventListener('dragend', function(e) {
+        var dot = e.target.closest('.cal-event-dot[data-content-id]');
+        if (dot) dot.classList.remove('dragging');
+        calBody.querySelectorAll('.cal-day.drag-over').forEach(function(d) { d.classList.remove('drag-over'); });
+    });
+    calBody.addEventListener('dragover', function(e) {
+        var day = e.target.closest('.cal-day');
+        if (!day) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        calBody.querySelectorAll('.cal-day.drag-over').forEach(function(d) { d.classList.remove('drag-over'); });
+        day.classList.add('drag-over');
+    });
+    calBody.addEventListener('dragleave', function(e) {
+        var day = e.target.closest('.cal-day');
+        if (day && !day.contains(e.relatedTarget)) day.classList.remove('drag-over');
+    });
+    calBody.addEventListener('drop', function(e) {
+        e.preventDefault();
+        var day = e.target.closest('.cal-day');
+        if (!day) return;
+        day.classList.remove('drag-over');
+        var contentId = e.dataTransfer.getData('text/plain');
+        var newDate = day.dataset.date;
+        if (!contentId || !newDate) return;
+        data = loadData();
+        var item = data.contents.find(function(c) { return c.id === contentId; });
+        if (item && item.postDate !== newDate) {
+            item.postDate = newDate;
+            item.updatedAt = new Date().toISOString();
+            saveData(data);
+            showToast('ย้าย "' + item.title + '" ไปวันที่ ' + formatDate(newDate));
+            renderCalendar();
+        }
+    });
+}
+
+function getEventsForDate(dateStr) { return data.events.filter(function(e) { return e.date === dateStr; }); }
+function getHolidaysForDate(dateStr) { var d = new Date(dateStr); return IMPORTANT_DATES.filter(function(h) { return h.month === d.getMonth() && h.day === d.getDate(); }); }
+window.selectCalDate = function(dateStr) { selectedCalDate = dateStr; renderCalendar(); };
+
+function renderSuggestions() {
+    var suggestions = IMPORTANT_DATES.filter(function(h) { return h.month === currentCalMonth; });
+    var container = document.getElementById('cal-suggestions');
+    if (suggestions.length === 0) {
+        container.innerHTML = '<div class="empty-state">ไม่มีคำแนะนำเดือนนี้</div>';
+    } else {
+        container.innerHTML = suggestions.map(function(s) {
+            return '<div class="suggestion-item"><div class="sug-date">' + s.day + ' ' + THAI_MONTHS_SHORT[s.month] + '</div><div class="sug-title">' + esc(s.name) + '</div>' +
+                '<div class="sug-detail"><i class="fas fa-film"></i> <strong>คลิป:</strong> ' + esc(s.clip) + '</div>' +
+                '<div class="sug-detail"><i class="fas fa-image"></i> <strong>โพสต์ภาพ:</strong> ' + esc(s.photo) + '</div>' +
+                '<div class="sug-detail"><i class="fas fa-pen"></i> <strong>Description:</strong></div>' +
+                '<div class="sug-desc-box" onclick="copyDesc(this)" data-desc="' + esc(s.desc) + '"><span class="copy-hint"><i class="fas fa-copy"></i> คัดลอก</span>' + esc(s.desc) + '</div></div>';
+        }).join('');
+    }
+}
+
+function renderDayEvents() {
+    var container = document.getElementById('cal-day-events');
+    var label = document.getElementById('selected-date-label');
+    if (!selectedCalDate) { label.textContent = 'เลือกวันที่ในปฏิทิน'; container.innerHTML = ''; return; }
+    label.textContent = 'วันที่ ' + formatDate(selectedCalDate);
+    var events = getEventsForDate(selectedCalDate);
+    var holidays = getHolidaysForDate(selectedCalDate);
+    var scheduled = data.contents.filter(function(c) { return c.postDate === selectedCalDate; });
+    var html = '';
+    holidays.forEach(function(h) {
+        html += '<div class="day-event-item"><div class="de-title"><i class="fas fa-star" style="color:#FDCB6E"></i> ' + esc(h.name) + '</div>' +
+            '<div class="de-type"><i class="fas fa-film"></i> ' + esc(h.clip) + '</div>' +
+            '<div class="de-type"><i class="fas fa-image"></i> ' + esc(h.photo) + '</div>' +
+            '<div class="de-desc-box" onclick="copyDesc(this)" data-desc="' + esc(h.desc) + '"><i class="fas fa-pen"></i> ' + esc(h.desc) + '</div></div>';
+    });
+    events.forEach(function(ev) {
+        html += '<div class="day-event-item" onclick="openEventForEdit(\'' + ev.id + '\')"><div class="de-title"><i class="fas fa-' + (ev.type === 'post_schedule' ? 'paper-plane' : 'flag') + '" style="color:' + (ev.type === 'post_schedule' ? '#00B894' : '#E74C3C') + '"></i> ' + esc(ev.title) + '</div><div class="de-type">' + (ev.type === 'post_schedule' ? 'กำหนดโพสต์' : 'สำคัญ') + '</div></div>';
+    });
+    scheduled.forEach(function(c) {
+        html += '<div class="day-event-item" onclick="openContentForEdit(\'' + c.id + '\')"><div class="de-title"><i class="fas fa-file-alt" style="color:#6C5CE7"></i> ' + esc(c.title) + '</div><div class="de-type">เนื้อเรื่อง — ' + STATUS_LABELS[c.status] + '</div></div>';
+    });
+    if (!html) html = '<div class="empty-state">ไม่มีกำหนดการ</div>';
+    container.innerHTML = html;
+}
+
+document.getElementById('btn-new-event').addEventListener('click', function() { openEventModal(); });
+
+function openEventModal(event) {
+    var modal = document.getElementById('modal-event');
+    var titleEl = document.getElementById('modal-event-title');
+    var deleteBtn = document.getElementById('btn-delete-event');
+    data = loadData();
+    var linkSelect = document.getElementById('event-content-link');
+    linkSelect.innerHTML = '<option value="">-- ไม่เลือก --</option>';
+    data.contents.forEach(function(c) { linkSelect.innerHTML += '<option value="' + c.id + '">' + esc(c.title) + '</option>'; });
+    if (event) {
+        titleEl.textContent = 'แก้ไขกำหนดการ';
+        document.getElementById('event-id').value = event.id;
+        document.getElementById('event-title').value = event.title;
+        document.getElementById('event-date').value = event.date;
+        document.getElementById('event-type').value = event.type;
+        document.getElementById('event-content-link').value = event.contentId || '';
+        document.getElementById('event-description').value = event.description || '';
+        deleteBtn.style.display = 'inline-flex';
+    } else {
+        titleEl.textContent = 'เพิ่มกำหนดการ';
+        document.getElementById('event-id').value = '';
+        document.getElementById('event-title').value = '';
+        document.getElementById('event-date').value = selectedCalDate || '';
+        document.getElementById('event-type').value = 'post_schedule';
+        document.getElementById('event-content-link').value = '';
+        document.getElementById('event-description').value = '';
+        deleteBtn.style.display = 'none';
+    }
+    modal.classList.add('show');
+}
+
+window.openEventForEdit = function(id) {
+    data = loadData();
+    var event = data.events.find(function(e) { return e.id === id; });
+    if (event) openEventModal(event);
+};
+
+document.getElementById('btn-save-event').addEventListener('click', function() {
+    var id = document.getElementById('event-id').value;
+    var title = document.getElementById('event-title').value.trim();
+    var date = document.getElementById('event-date').value;
+    if (!title) { showToast('กรุณาใส่ชื่อกำหนดการ'); return; }
+    if (!date) { showToast('กรุณาเลือกวันที่'); return; }
+    data = loadData();
+    if (id) {
+        var idx = data.events.findIndex(function(e) { return e.id === id; });
+        if (idx >= 0) {
+            data.events[idx].title = title;
+            data.events[idx].date = date;
+            data.events[idx].type = document.getElementById('event-type').value;
+            data.events[idx].contentId = document.getElementById('event-content-link').value;
+            data.events[idx].description = document.getElementById('event-description').value;
+        }
+    } else {
+        data.events.push({
+            id: genId(), title: title, date: date,
+            type: document.getElementById('event-type').value,
+            contentId: document.getElementById('event-content-link').value,
+            description: document.getElementById('event-description').value
+        });
+    }
+    saveData(data);
+    closeModal('modal-event');
+    renderCalendar();
+    showToast(id ? 'บันทึกเรียบร้อย' : 'เพิ่มกำหนดการแล้ว');
+});
+
+document.getElementById('btn-delete-event').addEventListener('click', function() {
+    var id = document.getElementById('event-id').value;
+    if (!id) return;
+    if (!confirm('ต้องการลบกำหนดการนี้?')) return;
+    data = loadData();
+    data.events = data.events.filter(function(e) { return e.id !== id; });
+    saveData(data);
+    closeModal('modal-event');
+    renderCalendar();
+    showToast('ลบกำหนดการแล้ว');
+});
+
+document.getElementById('btn-cancel-event').addEventListener('click', function() { closeModal('modal-event'); });
+document.getElementById('close-event-modal').addEventListener('click', function() { closeModal('modal-event'); });
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('show'); });
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.show').forEach(function(m) { m.classList.remove('show'); });
+});
+
+renderDashboard();
+initCalendar();
+    </script>
+</body>
+</html>
