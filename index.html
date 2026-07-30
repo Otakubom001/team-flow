@@ -1204,8 +1204,10 @@ function renderContentList() {
                 '<span><i class="fas fa-clock"></i> ' + formatDate(c.updatedAt) + '</span>' +
                 (c.postDate ? '<span><i class="fas fa-calendar"></i> โพสต์: ' + formatDate(c.postDate) + '</span>' : '') +
                 '</div></div>' +
-                '<div style="display:flex;align-items:center;gap:8px"><span class="voice-badge ' + (c.voiced ? 'voiced' : 'not-voiced') + '" onclick="event.stopPropagation();toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + (c.voiced ? 'fa-microphone' : 'fa-microphone-slash') + '"></i> ' + (c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์') + '</span>' +
-                '<span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span></div></div>';
+                '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">' +
+                '<span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span>' +
+                '<span class="voice-badge ' + (c.voiced ? 'voiced' : 'not-voiced') + '" onclick="event.stopPropagation();toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + (c.voiced ? 'fa-microphone' : 'fa-microphone-slash') + '"></i> ' + (c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์') + '</span>' +
+                '</div></div>';
         }).join('');
     }
 }
