@@ -184,6 +184,18 @@ body {
 .holiday-item .holiday-date { font-size: 12px; font-weight: 700; color: var(--primary); min-width: 50px; }
 .holiday-item .holiday-name { font-size: 14px; font-weight: 500; }
 .holiday-item .holiday-suggest { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.workload-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); margin-bottom: 8px; }
+.workload-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+.workload-name { font-size: 14px; font-weight: 500; min-width: 50px; }
+.workload-bar-wrap { flex: 1; height: 20px; background: rgba(0,0,0,0.06); border-radius: 10px; overflow: hidden; }
+.workload-bar { height: 100%; border-radius: 10px; transition: width .3s; min-width: 0; }
+.workload-count { font-size: 13px; font-weight: 600; min-width: 28px; text-align: right; }
+.voice-summary { display: flex; gap: 16px; padding: 12px; }
+.voice-box { flex: 1; text-align: center; padding: 16px 12px; border-radius: var(--radius); background: var(--bg); }
+.voice-box .voice-num { font-size: 28px; font-weight: 700; display: block; }
+.voice-box .voice-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: block; }
+.voice-box.voiced { border: 2px solid #00b894; }
+.voice-box.not-voiced { border: 2px solid #e17055; }
 .empty-state { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 14px; }
 
 .content-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--bg); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
@@ -481,6 +493,14 @@ body {
                 <div class="card">
                     <h3><i class="fas fa-star"></i> วันสำคัญเดือนนี้</h3>
                     <div id="dashboard-holidays" class="holiday-list"></div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-users"></i> งานของแต่ละคน</h3>
+                    <div id="dashboard-workload"></div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-microphone"></i> สถานะพากย์เสียง</h3>
+                    <div id="dashboard-voice"></div>
                 </div>
             </div>
         </section>
@@ -1155,6 +1175,28 @@ function renderDashboard() {
         }).join('');
     }
     renderHolidaysForMonth(now.getMonth(), document.getElementById('dashboard-holidays'));
+
+    var members = ['พลอย','บอม','เพชร'];
+    var memberColors = ['#6C5CE7','#E17055','#00B894'];
+    var activeContents = data.contents.filter(function(c) { return c.status !== 'posted'; });
+    var maxCount = Math.max.apply(null, members.map(function(m) { return activeContents.filter(function(c) { return c.assignedTo === m; }).length; }).concat([1]));
+    document.getElementById('dashboard-workload').innerHTML = members.map(function(m, i) {
+        var count = activeContents.filter(function(c) { return c.assignedTo === m; }).length;
+        var pct = Math.round((count / maxCount) * 100);
+        return '<div class="workload-row">' +
+            '<div class="workload-avatar" style="background:' + memberColors[i] + '">' + m.charAt(0) + '</div>' +
+            '<span class="workload-name">' + esc(m) + '</span>' +
+            '<div class="workload-bar-wrap"><div class="workload-bar" style="width:' + pct + '%;background:' + memberColors[i] + '"></div></div>' +
+            '<span class="workload-count">' + count + '</span></div>';
+    }).join('');
+
+    var voicedCount = activeContents.filter(function(c) { return c.voiced; }).length;
+    var notVoicedCount = activeContents.filter(function(c) { return !c.voiced; }).length;
+    document.getElementById('dashboard-voice').innerHTML =
+        '<div class="voice-summary">' +
+        '<div class="voice-box voiced"><span class="voice-num">' + voicedCount + '</span><span class="voice-label"><i class="fas fa-microphone"></i> พากย์แล้ว</span></div>' +
+        '<div class="voice-box not-voiced"><span class="voice-num">' + notVoicedCount + '</span><span class="voice-label"><i class="fas fa-microphone-slash"></i> ยังไม่พากย์</span></div>' +
+        '</div>';
 }
 
 function renderHolidaysForMonth(month, container) {
