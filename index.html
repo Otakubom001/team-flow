@@ -233,6 +233,15 @@ body {
 .voice-badge.not-voiced { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
 .voice-badge.voiced { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
 .voice-badge:hover { opacity: 0.8; transform: scale(1.05); }
+.section-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; margin-top: 16px; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
+.section-header:first-child { margin-top: 0; }
+.section-header i { font-size: 16px; }
+.section-header .section-count { background: rgba(0,0,0,0.1); padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.section-new { background: linear-gradient(135deg, #667eea22, #764ba222); color: #5B4FCF; border: 1px solid #667eea44; }
+.section-stock { background: linear-gradient(135deg, #00b89422, #00cec922); color: #00897B; border: 1px solid #00b89444; }
+[data-theme="dark"] .section-new { background: linear-gradient(135deg, #667eea22, #764ba222); color: #A59BFF; border-color: #667eea33; }
+[data-theme="dark"] .section-stock { background: linear-gradient(135deg, #00b89422, #00cec922); color: #69F0AE; border-color: #00b89433; }
+[data-theme="dark"] .section-header .section-count { background: rgba(255,255,255,0.1); }
 [data-theme="dark"] .voice-badge.not-voiced { background: #3E2723; color: #FFB74D; border-color: #5D4037; }
 [data-theme="dark"] .voice-badge.voiced { background: #1B5E20; color: #81C784; border-color: #2E7D32; }
 
@@ -1190,25 +1199,44 @@ function renderContentList() {
     });
     filtered.sort(function(a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
     var list = document.getElementById('content-list');
-    var emptyMsg = currentContentTab === 'archive'
-        ? '<div class="empty-state" style="padding:40px"><i class="fas fa-archive" style="font-size:2em;opacity:.3"></i><br>ยังไม่มีเนื้อเรื่องที่โพสต์แล้ว</div>'
-        : '<div class="empty-state" style="padding:40px">ไม่มีเนื้อเรื่อง — กด "สร้างเนื้อเรื่องใหม่" เพื่อเริ่มต้น</div>';
-    if (filtered.length === 0) {
-        list.innerHTML = emptyMsg;
+
+    function renderCard(c) {
+        return '<div class="content-card" onclick="openContentForEdit(\'' + c.id + '\')">' +
+            '<div class="cc-status" style="background:' + STATUS_COLORS[c.status] + '"></div>' +
+            '<div class="cc-info"><div class="cc-title">' + esc(c.title) + '</div>' +
+            '<div class="cc-meta"><span><i class="fas fa-user"></i> ' + esc(c.assignedTo) + '</span>' +
+            '<span><i class="fas fa-clock"></i> ' + formatDate(c.updatedAt) + '</span>' +
+            (c.postDate ? '<span><i class="fas fa-calendar"></i> โพสต์: ' + formatDate(c.postDate) + '</span>' : '') +
+            '</div></div>' +
+            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">' +
+            '<span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span>' +
+            '<span class="voice-badge ' + (c.voiced ? 'voiced' : 'not-voiced') + '" onclick="event.stopPropagation();toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + (c.voiced ? 'fa-microphone' : 'fa-microphone-slash') + '"></i> ' + (c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์') + '</span>' +
+            '</div></div>';
+    }
+
+    if (currentContentTab === 'active') {
+        var newStories = filtered.filter(function(c) { return c.status !== 'ready'; });
+        var stockReady = filtered.filter(function(c) { return c.status === 'ready'; });
+        var html = '';
+        html += '<div class="section-header section-new"><i class="fas fa-pen-fancy"></i> Story เรื่องใหม่ <span class="section-count">' + newStories.length + '</span></div>';
+        if (newStories.length === 0) {
+            html += '<div class="empty-state" style="padding:30px">ไม่มีเรื่องใหม่ — กด "สร้างเนื้อเรื่องใหม่" เพื่อเริ่มต้น</div>';
+        } else {
+            html += newStories.map(renderCard).join('');
+        }
+        html += '<div class="section-header section-stock"><i class="fas fa-box-open"></i> Stock รอโพสต์ <span class="section-count">' + stockReady.length + '</span></div>';
+        if (stockReady.length === 0) {
+            html += '<div class="empty-state" style="padding:30px">ยังไม่มีเรื่องที่พร้อมโพสต์</div>';
+        } else {
+            html += stockReady.map(renderCard).join('');
+        }
+        list.innerHTML = html;
     } else {
-        list.innerHTML = filtered.map(function(c) {
-            return '<div class="content-card" onclick="openContentForEdit(\'' + c.id + '\')">' +
-                '<div class="cc-status" style="background:' + STATUS_COLORS[c.status] + '"></div>' +
-                '<div class="cc-info"><div class="cc-title">' + esc(c.title) + '</div>' +
-                '<div class="cc-meta"><span><i class="fas fa-user"></i> ' + esc(c.assignedTo) + '</span>' +
-                '<span><i class="fas fa-clock"></i> ' + formatDate(c.updatedAt) + '</span>' +
-                (c.postDate ? '<span><i class="fas fa-calendar"></i> โพสต์: ' + formatDate(c.postDate) + '</span>' : '') +
-                '</div></div>' +
-                '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">' +
-                '<span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span>' +
-                '<span class="voice-badge ' + (c.voiced ? 'voiced' : 'not-voiced') + '" onclick="event.stopPropagation();toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + (c.voiced ? 'fa-microphone' : 'fa-microphone-slash') + '"></i> ' + (c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์') + '</span>' +
-                '</div></div>';
-        }).join('');
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding:40px"><i class="fas fa-archive" style="font-size:2em;opacity:.3"></i><br>ยังไม่มีเนื้อเรื่องที่โพสต์แล้ว</div>';
+        } else {
+            list.innerHTML = filtered.map(renderCard).join('');
+        }
     }
 }
 
