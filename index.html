@@ -229,6 +229,12 @@ body {
 .kanban-card .kc-actions { display: flex; gap: 6px; margin-top: 10px; }
 .kanban-card .kc-actions button { flex: 1; padding: 5px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-size: 11px; cursor: pointer; font-family: inherit; transition: all var(--transition); color: var(--text); }
 .kanban-card .kc-actions button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.voice-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all 0.2s; }
+.voice-badge.not-voiced { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
+.voice-badge.voiced { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
+.voice-badge:hover { opacity: 0.8; transform: scale(1.05); }
+[data-theme="dark"] .voice-badge.not-voiced { background: #3E2723; color: #FFB74D; border-color: #5D4037; }
+[data-theme="dark"] .voice-badge.voiced { background: #1B5E20; color: #81C784; border-color: #2E7D32; }
 
 .calendar-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
 .calendar-main { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
@@ -905,7 +911,7 @@ async function syncFromSupabase() {
     var r1 = await sb.from('contents').select('*');
     var r2 = await sb.from('events').select('*');
     dataCache.contents = (r1.data || []).map(function(c) {
-        return { id: c.id, title: c.title, content: c.content, assignedTo: c.assigned_to, status: c.status, postDate: c.post_date, createdAt: c.created_at, updatedAt: c.updated_at };
+        return { id: c.id, title: c.title, content: c.content, assignedTo: c.assigned_to, status: c.status, postDate: c.post_date, createdAt: c.created_at, updatedAt: c.updated_at, voiced: !!c.voiced };
     });
     dataCache.events = (r2.data || []).map(function(e) {
         return { id: e.id, title: e.title, date: e.date, type: e.type, contentId: e.content_id, description: e.description };
@@ -914,7 +920,7 @@ async function syncFromSupabase() {
 }
 
 async function saveContent(c) {
-    var row = { id: c.id, title: c.title, content: c.content || '', assigned_to: c.assignedTo, status: c.status, post_date: c.postDate || null, created_at: c.createdAt, updated_at: c.updatedAt };
+    var row = { id: c.id, title: c.title, content: c.content || '', assigned_to: c.assignedTo, status: c.status, post_date: c.postDate || null, created_at: c.createdAt, updated_at: c.updatedAt, voiced: !!c.voiced };
     await sb.from('contents').upsert(row);
 }
 
@@ -944,7 +950,10 @@ async function setSetting(key, value) {
 function formatDate(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
-    return d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear() + 543;
+    return dd + '/' + mm + '/' + yyyy;
 }
 
 function formatDateShort(dateStr) {
@@ -1194,7 +1203,9 @@ function renderContentList() {
                 '<div class="cc-meta"><span><i class="fas fa-user"></i> ' + esc(c.assignedTo) + '</span>' +
                 '<span><i class="fas fa-clock"></i> ' + formatDate(c.updatedAt) + '</span>' +
                 (c.postDate ? '<span><i class="fas fa-calendar"></i> โพสต์: ' + formatDate(c.postDate) + '</span>' : '') +
-                '</div></div><span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span></div>';
+                '</div></div>' +
+                '<div style="display:flex;align-items:center;gap:8px"><span class="voice-badge ' + (c.voiced ? 'voiced' : 'not-voiced') + '" onclick="event.stopPropagation();toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + (c.voiced ? 'fa-microphone' : 'fa-microphone-slash') + '"></i> ' + (c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์') + '</span>' +
+                '<span class="status-badge status-' + c.status + '">' + (STATUS_LABELS[c.status] || c.status) + '</span></div></div>';
         }).join('');
     }
 }
@@ -1283,7 +1294,7 @@ document.getElementById('btn-save-content').addEventListener('click', async func
             assignedTo: document.getElementById('content-assigned').value,
             status: document.getElementById('content-status').value,
             postDate: document.getElementById('content-post-date').value,
-            createdAt: now, updatedAt: now
+            createdAt: now, updatedAt: now, voiced: false
         };
         data.contents.push(item);
     }
@@ -1323,10 +1334,14 @@ function renderKanban() {
             col.innerHTML = items.map(function(c) {
                 var color = MEMBER_COLORS[c.assignedTo] || '#999';
                 var initial = c.assignedTo ? c.assignedTo.charAt(0) : '?';
+                var vclass = c.voiced ? 'voiced' : 'not-voiced';
+                var vicon = c.voiced ? 'fa-microphone' : 'fa-microphone-slash';
+                var vlabel = c.voiced ? 'พากย์แล้ว' : 'ยังไม่พากย์';
                 return '<div class="kanban-card" draggable="true" data-id="' + c.id + '" ondblclick="openContentForEdit(\'' + c.id + '\')">' +
                     '<div class="kc-title">' + esc(c.title) + '</div>' +
                     '<div class="kc-meta"><div class="kc-avatar" style="background:' + color + '">' + initial + '</div>' +
                     '<span>' + (c.postDate ? formatDateShort(c.postDate) : '') + '</span></div>' +
+                    '<div style="margin-top:8px"><span class="voice-badge ' + vclass + '" onclick="toggleVoice(\'' + c.id + '\',event)"><i class="fas ' + vicon + '"></i> ' + vlabel + '</span></div>' +
                     '<div class="kc-actions"><button onclick="event.stopPropagation();openContentForEdit(\'' + c.id + '\')">' +
                     '<i class="fas fa-edit"></i> แก้ไข</button></div></div>';
             }).join('');
@@ -1334,6 +1349,20 @@ function renderKanban() {
     });
     initKanbanDragDrop();
 }
+
+window.toggleVoice = async function(id, e) {
+    e.stopPropagation();
+    data = loadData();
+    var item = data.contents.find(function(c) { return c.id === id; });
+    if (!item) return;
+    item.voiced = !item.voiced;
+    item.updatedAt = new Date().toISOString();
+    saveData(data);
+    await saveContent(item);
+    renderKanban();
+    renderContentList();
+    showToast(item.voiced ? '"' + item.title + '" — พากย์แล้ว' : '"' + item.title + '" — ยังไม่พากย์');
+};
 
 function initKanbanDragDrop() {
     var board = document.getElementById('kanban-board');
