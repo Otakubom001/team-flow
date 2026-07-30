@@ -278,11 +278,12 @@ body {
 .cal-day .day-events { display: flex; flex-direction: column; gap: 2px; }
 .cal-event-dot { font-size: 10px; padding: 1px 5px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
 .cal-event-dot.type-content { background: #6C5CE7; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: grab; }
-.cal-event-dot.type-content:active { cursor: grabbing; }
-.cal-event-dot.type-content.dragging { opacity: 0.5; }
+.cal-event-dot.type-content-image { background: #E84393; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: grab; }
+.cal-event-dot.type-content:active, .cal-event-dot.type-content-image:active { cursor: grabbing; }
+.cal-event-dot.type-content.dragging, .cal-event-dot.type-content-image.dragging { opacity: 0.5; }
 .cal-event-dot.type-post_schedule { background: #00B894; color: #fff; font-weight: 600; }
 .cal-event-dot.type-important { background: #E67E22; color: #fff; font-weight: 600; }
-.cal-event-dot.type-holiday { background: #6C5CE7; color: #fff; font-weight: 600; }
+.cal-event-dot.type-holiday { background: #F39C12; color: #fff; font-weight: 600; }
 .cal-day.has-holiday { background: #F0EAFF; }
 .cal-day.has-content { background: #EDE7FF; }
 .cal-day.has-event { background: #E8F8F5; }
@@ -1597,7 +1598,8 @@ function renderCalendar() {
         holidays.forEach(function(h) { eventsHtml += '<div class="cal-event-dot type-holiday">' + esc(h.name) + '</div>'; });
         dayEvents.forEach(function(ev) { eventsHtml += '<div class="cal-event-dot type-' + ev.type + '">' + esc(ev.title) + '</div>'; });
         scheduledContents.forEach(function(c) {
-            eventsHtml += '<div class="cal-event-dot type-content" draggable="true" data-content-id="' + c.id + '" title="' + esc(c.title) + ' — ' + (STATUS_LABELS[c.status] || c.status) + '">' + esc(c.title) + '</div>';
+            var dotType = c.status === 'making_image' ? 'type-content-image' : 'type-content';
+            eventsHtml += '<div class="cal-event-dot ' + dotType + '" draggable="true" data-content-id="' + c.id + '" title="' + esc(c.title) + ' — ' + (STATUS_LABELS[c.status] || c.status) + '">' + esc(c.title) + '</div>';
         });
         html += '<div class="' + classes + '" data-date="' + dateStr + '" onclick="selectCalDate(\'' + dateStr + '\')">' +
             '<div class="day-number">' + dayNum + '</div><div class="day-events">' + eventsHtml + '</div></div>';
