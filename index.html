@@ -385,7 +385,18 @@ body {
 :root:not([data-theme="dark"]) .nav-item:is(:hover,.active){color:#543cb9;background:#efeaff}
 @media(min-width:1100px){.dashboard-grid{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}.dashboard-grid>.card:first-child{grid-row:span 2}}
 .cal-day.selected{outline:2px solid var(--primary);outline-offset:-2px}
+.schedule-actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; }
+.schedule-actions input { max-width:100%; padding:6px; font:inherit; color:var(--text); background:var(--card-bg); border:1px solid var(--border); border-radius:6px; }
 .content-tabs .content-tab{white-space:nowrap}
+    .day-tools{display:flex;align-items:center;justify-content:space-between;gap:1px;flex-wrap:wrap}
+    .day-tools .day-number{font:inherit;color:inherit;background:transparent;border:0;cursor:pointer}
+    #add-day-story{width:26px;height:26px;border:0;border-radius:50%;background:var(--primary);color:white;font:600 20px/1 sans-serif;cursor:pointer}
+    #picker-panel{margin:auto;width:min(480px,94vw);max-height:85dvh;border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--card-bg);color:var(--text);box-shadow:var(--shadow-lg)}
+    #picker-panel[open]{display:flex;flex-direction:column;gap:12px}
+    #picker-panel::backdrop{background:rgba(22,18,40,.48)}
+    #picker-panel footer{display:flex;justify-content:flex-end;gap:8px}
+    #picker-panel #picker-list{min-height:0;margin:0}
+    #picker-error{color:var(--danger)}#picker-error:empty{display:none}
     </style>
 </head>
 <body>
@@ -631,11 +642,6 @@ body {
                         <h3><i class="fas fa-list"></i> กำหนดการวันที่เลือก</h3>
                         <p class="selected-date-label" id="selected-date-label">เลือกวันที่ในปฏิทิน</p>
                         <div id="cal-day-events"></div>
-                        <button id="picker-open" hidden class="btn btn-primary" onclick="openPicker()">เลือกงานลงวันนี้</button>
-                        <div id="picker-panel" hidden><h4>เลือกงานลงวันที่ <span id="picker-date"></span></h4>
-                        <input id="picker-search" placeholder="ค้นหาเนื้อเรื่อง" aria-label="ค้นหาเนื้อเรื่อง" oninput="renderPicker()">
-                        <div id="picker-list"></div><button id="picker-save" class="btn btn-primary"></button>
-                        <button class="btn btn-sm" onclick="byId('picker-panel').hidden=true">ปิด</button></div>
                     </div>
 
                     <div class="card">
@@ -654,6 +660,14 @@ body {
     <!-- ==================== MODALS ==================== -->
 
     <!-- Content Editor Modal -->
+    <dialog id="picker-panel" aria-labelledby="picker-heading">
+        <h3 id="picker-heading">เพิ่มงานลงวันที่ <span id="picker-date"></span></h3>
+        <input id="picker-search" autofocus placeholder="ค้นหาเนื้อเรื่อง" aria-label="ค้นหาเนื้อเรื่อง" oninput="renderPicker()">
+        <div id="picker-list"></div>
+        <p id="picker-error" role="alert"></p>
+        <footer><button type="button" class="btn btn-secondary" onclick="byId('picker-panel').close()">ยกเลิก</button>
+        <button id="picker-save" class="btn btn-primary"></button></footer>
+    </dialog>
     <div class="modal-overlay" id="modal-content">
         <div class="modal modal-large">
             <div class="modal-header">
@@ -1427,7 +1441,6 @@ document.getElementById('cal-today').addEventListener('click', function() {
     var now = new Date();
     currentCalMonth = now.getMonth();
     currentCalYear = now.getFullYear();
-    byId('picker-panel').hidden=true;
     selectedCalDate = currentCalYear + '-' + String(currentCalMonth + 1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
     renderCalendar();
 });
@@ -1457,7 +1470,6 @@ function renderCalendar() {
             dayNum = dayCount;
             dateStr = currentCalYear + '-' + String(currentCalMonth+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
             if (dateStr === todayStr) classes += ' today';
-            if (dateStr === selectedCalDate) classes += ' selected';
             dayCount++;
         } else {
             dayNum = nextMonthDay++;
@@ -1466,6 +1478,7 @@ function renderCalendar() {
             dateStr = ny + '-' + String(nm+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
             classes += ' other-month';
         }
+        if (dateStr === selectedCalDate) classes += ' selected';
         var dayEvents = getEventsForDate(dateStr);
         var holidays = getHolidaysForDate(dateStr);
         var scheduledContents = data.contents.filter(function(c) { return c.postDate === dateStr; });
@@ -1480,7 +1493,9 @@ function renderCalendar() {
             eventsHtml += '<div class="cal-event-dot ' + dotType + '" draggable="true" data-content-id="' + c.id + '" title="' + esc(c.title) + ' — ' + (STATUS_LABELS[c.status] || c.status) + '">' + esc(c.title) + '</div>';
         });
         html += '<div class="' + classes + '" data-date="' + dateStr + '" onclick="selectCalDate(\'' + dateStr + '\')">' +
-            '<div class="day-number">' + dayNum + '</div><div class="day-events">' + eventsHtml + '</div></div>';
+            '<div class="day-tools"><button type="button" class="day-number" aria-label="เลือกวันที่ ' + formatDate(dateStr) + '">' + dayNum + '</button>' +
+            (dateStr === selectedCalDate ? '<button type="button" id="add-day-story" aria-haspopup="dialog" aria-label="เพิ่มงานลงวันที่ ' + formatDate(dateStr) + '" onclick="event.stopPropagation();openPicker()">+</button>' : '') +
+            '</div><div class="day-events">' + eventsHtml + '</div></div>';
     }
     document.getElementById('cal-body').innerHTML = html;
     initCalendarDragDrop();
@@ -1540,7 +1555,11 @@ function initCalendarDragDrop() {
 
 function getEventsForDate(dateStr) { return data.events.filter(function(e) { return e.date === dateStr; }); }
 function getHolidaysForDate(dateStr) { var d = new Date(dateStr); return IMPORTANT_DATES.filter(function(h) { return h.month === d.getMonth() && h.day === d.getDate(); }); }
-window.selectCalDate = function(dateStr) { selectedCalDate = dateStr; byId("picker-panel").hidden=true; renderCalendar();openPicker(); if(matchMedia("(max-width:1024px)").matches) byId("picker-panel").scrollIntoView({block:"center"}); };
+window.selectCalDate = function(dateStr) {
+    selectedCalDate = dateStr;
+    renderCalendar();
+    byId('add-day-story')?.focus({preventScroll:true});
+};
 
 function renderSuggestions() {
     var suggestions = IMPORTANT_DATES.filter(function(h) { return h.month === currentCalMonth; });
@@ -1563,7 +1582,6 @@ function renderDayEvents() {
     var label = document.getElementById('selected-date-label');
     if (!selectedCalDate) { label.textContent = 'เลือกวันที่ในปฏิทิน'; container.innerHTML = ''; return; }
     label.textContent = 'วันที่ ' + formatDate(selectedCalDate);
-    byId('picker-open').hidden=false;
     var events = getEventsForDate(selectedCalDate);
     var holidays = getHolidaysForDate(selectedCalDate);
     var scheduled = data.contents.filter(function(c) { return c.postDate === selectedCalDate; });
@@ -1577,11 +1595,58 @@ function renderDayEvents() {
     events.forEach(function(ev) {
         html += '<div class="day-event-item" onclick="openEventForEdit(\'' + ev.id + '\')"><div class="de-title"><i class="fas fa-' + (ev.type === 'post_schedule' ? 'paper-plane' : 'flag') + '" style="color:' + (ev.type === 'post_schedule' ? '#00B894' : '#E74C3C') + '"></i> ' + esc(ev.title) + '</div><div class="de-type">' + (ev.type === 'post_schedule' ? 'กำหนดโพสต์' : 'สำคัญ') + '</div></div>';
     });
-    scheduled.forEach(function(c) {
-        html += '<div class="day-event-item" onclick="openContentForEdit(\'' + c.id + '\')"><div class="de-title"><i class="fas fa-file-alt" style="color:#6C5CE7"></i> ' + esc(c.title) + '</div><div class="de-type">เนื้อเรื่อง — ' + STATUS_LABELS[c.status] + '</div></div>';
-    });
-    if (!html) html = '<div class="empty-state">ไม่มีกำหนดการ</div>';
+    if (!html && !scheduled.length) html = '<div class="empty-state">ไม่มีกำหนดการ</div>';
     container.innerHTML = html;
+    scheduled.forEach(story => container.append(scheduledStoryRow(story)));
+}
+
+function scheduledStoryRow(story) {
+    const row = document.createElement('div');
+    row.className = 'day-event-item';
+    row.innerHTML = '<button type="button" class="story-title de-title"></button><div class="de-type"></div>' +
+        '<div class="schedule-actions"><button class="btn btn-sm" type="button">ย้ายวัน</button>' +
+        '<button class="btn btn-sm" type="button">เอาออกจากวันนี้</button></div>' +
+        '<form class="schedule-actions" hidden><input type="date" aria-label="วันโพสต์ใหม่" required>' +
+        '<button class="btn btn-primary" type="submit">บันทึกวัน</button><button class="btn btn-sm" type="button">ยกเลิก</button></form>';
+    const title = row.querySelector('.story-title');
+    title.textContent = story.title;
+    title.onclick = () => openContentForEdit(story.id);
+    row.querySelector('.de-type').textContent = STATUS_LABELS[story.status] || story.status;
+    const actions = row.querySelector('.schedule-actions'), form = row.querySelector('form');
+    const [move, remove] = actions.querySelectorAll('button');
+    const input = form.querySelector('input'), oldDate = story.postDate;
+    move.onclick = () => {
+        actions.hidden = true; form.hidden = false; input.value = oldDate; input.focus();
+    };
+    form.querySelector('[type="button"]').onclick = () => {
+        form.hidden = true; actions.hidden = false; move.focus();
+    };
+    form.onsubmit = event => {
+        event.preventDefault();
+        if (input.value === oldDate) { showToast('กรุณาเลือกวันใหม่'); return; }
+        changeDate(input.value);
+    };
+    remove.onclick = () => {
+        if (confirm('เอา “' + story.title + '” ออกจากวันที่ ' + formatDate(oldDate) + ' และเก็บเนื้อเรื่องไว้ใช่ไหม?')) changeDate(null);
+    };
+    async function changeDate(nextDate) {
+        if (row.inert) return;
+        row.inert = true;
+        try {
+            const {data: saved, error} = await sb.from('contents')
+                .update({post_date: nextDate, updated_at: new Date().toISOString()})
+                .eq('id', story.id).eq('post_date', oldDate).select().maybeSingle();
+            if (error) throw error;
+            if (!saved) { showToast('กำหนดการเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่'); return; }
+            Object.assign(story, unpackContent(saved));
+            renderCalendar();
+            if (byId('picker-panel').open) renderPicker();
+            showToast(nextDate ? 'ย้ายไปวันที่ ' + formatDate(nextDate) + ' แล้ว' : 'เอาออกจากวันนี้แล้ว เก็บเนื้อเรื่องไว้แล้ว');
+        } catch {
+            showToast('บันทึกวันโพสต์ไม่สำเร็จ กรุณาลองอีกครั้ง');
+        } finally { row.inert = false; }
+    }
+    return row;
 }
 
 document.getElementById('btn-new-event').addEventListener('click', function() { openEventModal(); });
@@ -1890,9 +1955,15 @@ function updatePickerButton(){
     byId('picker-save').disabled=!checkedStories.size;
 }
 function openPicker(){
-    checkedStories.clear();byId('picker-search').value='';byId('picker-panel').hidden=false;
-    byId('picker-date').textContent=formatDate(selectedCalDate); renderPicker();
+    checkedStories.clear();
+    byId('picker-search').value='';
+    byId('picker-error').textContent='';
+    byId('picker-date').textContent=formatDate(selectedCalDate);
+    renderPicker();
+    byId('picker-panel').showModal();
 }
+byId('picker-panel').addEventListener('cancel', e => { if(e.currentTarget.inert)e.preventDefault(); });
+byId('picker-panel').addEventListener('close', () => byId('add-day-story')?.focus({preventScroll:true}));
 byId('picker-save').onclick=async function(){
     const ids=[...checkedStories],date=selectedCalDate;
     if(!ids.length||!date)return;
@@ -1901,13 +1972,14 @@ byId('picker-save').onclick=async function(){
         // One statement schedules every selected story. Update only the scheduling fields.
         const now=new Date().toISOString();
         const {data:rows,error}=await sb.from('contents').update({post_date:date,updated_at:now}).in('id',ids).neq('status','posted').select();
-        if(error) {showToast('บันทึกวันโพสต์ไม่สำเร็จ กรุณาลองอีกครั้ง');return;}
+        if(error) throw error;
         for(const row of rows||[]) {
             const c=loadData().contents.find(x=>x.id===row.id);if(c)Object.assign(c,unpackContent(row));
         }
-        checkedStories.clear(); panel.hidden=true; renderCalendar();
+        checkedStories.clear(); panel.close(); renderCalendar();
         showToast('กำหนดวันโพสต์แล้ว '+(rows||[]).length+' จาก '+ids.length+' งาน');
-    } finally {panel.inert=false;}
+    } catch {byId('picker-error').textContent='บันทึกวันโพสต์ไม่สำเร็จ กรุณาลองอีกครั้ง';}
+    finally {panel.inert=false;}
 };
 
 setInterval(()=>{if(dataReady && byId('page-workflow').classList.contains('active') && !document.querySelector('.dragging'))renderKanban();},60000);
