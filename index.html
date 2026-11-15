@@ -695,6 +695,7 @@ body {
     <!-- Content Editor Modal -->
     <dialog id="picker-panel" aria-labelledby="picker-heading">
         <h3 id="picker-heading">เพิ่มงานลงวันที่ <span id="picker-date"></span></h3>
+        <p>งานที่เพิ่มจะเปลี่ยนสถานะเป็น “โพสต์แล้ว” ทันที</p>
         <input id="picker-search" autofocus placeholder="ค้นหาเนื้อเรื่อง" aria-label="ค้นหาเนื้อเรื่อง" oninput="renderPicker()">
         <div id="picker-list"></div>
         <p id="picker-error" role="alert"></p>
@@ -912,7 +913,7 @@ const IMPORTANT_DATES = [
       clip: 'คลิป "AI พาย้อนเวลาไปกรุงรัตนโกสินทร์" — สร้างภาพบ้านเมืองแต่ละยุคจาก ร.1 ถึงปัจจุบัน แบบ Time-lapse',
       photo: 'ภาพ AI วาดกรุงเทพฯ ในมุมมองของแต่ละรัชกาล — เทียบภาพเก่า vs AI สร้างใหม่',
       desc: 'ถ้า AI พาย้อนเวลาไปสมัย ร.1 คุณจะทำอะไรเป็นอย่างแรก?\n\nกรุงรัตนโกสินทร์ 242 ปี จากท้องทุ่งถึงมหานคร 🇹🇭\n\nน้อมรำลึกในพระมหากรุณาธิคุณ 🙏\n\n#วันจักรี #กรุงรัตนโกสินทร์ #ประวัติศาสตร์ไทย #AI' },
-    { month: 3, day: 13, name: 'วันสงกรานต์',
+    { month: 3, day: 13, endDay: 15, name: 'วันสงกรานต์',
       clip: 'คลิป "สงกรานต์ทั่วโลกถ้าสร้างด้วย AI" — AI วาดสงกรานต์ที่ญี่ปุ่น/อเมริกา/แอฟริกา จะเป็นยังไง?',
       photo: 'Carousel: AI สร้างชุดไทยสงกรานต์ 5 แบบ ตั้งแต่แบบดั้งเดิมถึงแบบ Cyberpunk สงกรานต์ปี 3000',
       desc: 'ถ้าฝรั่งจัดสงกรานต์ มันจะเป็นแบบไหน? 🤔💦\n\nAI ลองวาดให้แล้ว... ผลคือมีปืนฉีดน้ำขนาดรถถัง 😂\n\nสงกรานต์ไทยยังไงก็ที่ 1 🇹🇭🌺\nสนุก ปลอดภัย เคารพผู้อื่นนะ!\n\n#สงกรานต์ #Songkran #AI #เล่นน้ำ #ปีใหม่ไทย' },
@@ -944,7 +945,7 @@ const IMPORTANT_DATES = [
       clip: 'คลิป "AI วาดแม่คุณจากคำบอกเล่า" — ให้คนดูบรรยายแม่ตัวเอง 3 คำ แล้ว AI วาดออกมา ดูว่าเหมือนไหม',
       photo: 'Carousel: AI วาด "มือแม่" ในแต่ละช่วงชีวิต — มือที่อุ้ม/มือที่จับเดิน/มือที่ปล่อย/มือที่รอ',
       desc: 'บอก AI ว่าแม่คุณเป็นคนยังไง 3 คำ\nAI วาดออกมาแบบนี้...\n\nแม่ทุกคนสวยที่สุดในสายตาลูก 💙👩‍👧‍👦\n\nวันนี้โทรหาแม่หรือยัง?\nไม่ต้องรอวันแม่ก็บอกรักได้ ☎️\n\n#วันแม่ #MothersDay #รักแม่ #AI #แม่คือทุกอย่าง' },
-    { month: 8, day: 28, name: 'วันสารทไทย',
+    { lunarKey: 'sartThai', name: 'วันสารทไทย',
       clip: 'คลิป "AI พาชิมขนมไทยโบราณ" — สร้างภาพขนมกระยาสารทและขนมไทยหายากในสไตล์ภาพถ่ายอาหาร Michelin',
       photo: 'Carousel: AI วาดขนมไทย 5 อย่าง ในสไตล์ Fine Dining / วางจานแบบร้านหรู',
       desc: 'ขนมไทยถ้าเสิร์ฟแบบ Fine Dining จะหน้าตาเป็นยังไง? 🍡✨\n\nAI ลองจัดให้ ผลคือ...\nขนมกระยาสารทราคาจาน 1,500 บาท 😂\n\nขนมไทยไม่แพ้ชาติใดในโลก 🇹🇭\n\n#วันสารทไทย #ขนมไทย #AI #FineDining' },
@@ -964,7 +965,7 @@ const IMPORTANT_DATES = [
       clip: 'คลิป "AI วาดแฟนในฝันของคุณ" — ให้คนดู describe แฟนในฝัน แล้ว AI วาดออกมา ผลลัพธ์ตลกมาก',
       photo: 'Carousel: AI วาด "ของที่โสดต้องมี" 5 อย่าง แบบ Luxury Edition (หมอนข้างหลุยส์/แมวใส่สูท/Netflix VIP)',
       desc: 'โสดไม่ได้แปลว่าเหงา โสดแปลว่า... ไม่ต้องแชร์ Netflix 😎\n\nAI วาด Starter Pack คนโสด 2026:\n✅ หมอนข้างตัวโปรด\n✅ แมว (หรือหมา)\n✅ บัตรเครดิตไม่มีคนถาม\n\n11.11 นี้ซื้อให้ตัวเองเต็มที่! 🛒💸\n\n#วันคนโสด #1111 #โสดและสุข #AI #SelfCare' },
-    { month: 10, day: 15, name: 'วันลอยกระทง (ประมาณ)',
+    { lunarKey: 'loyKrathong', name: 'วันลอยกระทง',
       clip: 'คลิป "กระทงจากอนาคต" — AI ออกแบบกระทงปี 3000 (กระทงโดรน/กระทงโฮโลแกรม/กระทงจากดาวอังคาร)',
       photo: 'Carousel: AI วาดกระทงจาก 5 ประเทศถ้าทุกชาติมีลอยกระทง (ญี่ปุ่น/อเมริกา/อียิปต์/อิตาลี/เกาหลี)',
       desc: 'ถ้าทุกประเทศมีลอยกระทง กระทงแต่ละชาติจะหน้าตาเป็นแบบไหน? 🌍🏮\n\nAI ออกแบบให้แล้ว...\nกระทงอเมริกา = ทำจากเบอร์เกอร์ 🍔\nกระทงญี่ปุ่น = ทำจากซูชิ 🍣\n\nประเทศไหนเจ๋งสุด? โหวตมา 👇\n\n#ลอยกระทง #LoyKrathong #AI #วัฒนธรรมไทย' },
@@ -985,6 +986,23 @@ const IMPORTANT_DATES = [
       photo: 'Carousel: AI วาด "สิ่งที่ทุกคนอยากทิ้งไว้ในปีนี้" vs "สิ่งที่อยากเอาไปปีหน้า" — ให้คนดูเลือก',
       desc: 'ปีนี้ของคุณเป็นยังไง? AI สรุปให้แล้ว 📊\n\nสิ่งที่ควรทิ้งไว้ปีนี้:\n❌ นิสัยผัดวันประกันพรุ่ง\n❌ คนที่ไม่ใช่\n❌ ความคิดว่า "เริ่มพรุ่งนี้"\n\nสิ่งที่ต้องเอาไปปีหน้า:\n✅ ความกล้า\n✅ คนที่อยู่ข้างเรา\n✅ ความฝัน\n\n3...2...1... 🎆🥂 Happy New Year!\n\n#HappyNewYear #สวัสดีปีใหม่ #Countdown #AI' }
 ];
+
+// Lunar dates must be verified per year; never repeat a Gregorian estimate.
+const VERIFIED_LUNAR_DATES = {
+    2026: {
+        // https://panthong.cdd.go.th/th/content/category/detail/id/8/iid/428546
+        sartThai: { month: 9, day: 11 },
+        // https://www.tatnews.org/2026/11/loi-krathong-2026-lights-up-thailands-rivers-and-historic-cities/
+        loyKrathong: { month: 10, day: 24 }
+    }
+};
+function importantDatesForYear(year) {
+    return IMPORTANT_DATES.flatMap(h => {
+        if (!h.lunarKey) return [h];
+        const date = VERIFIED_LUNAR_DATES[year]?.[h.lunarKey];
+        return date ? [{ ...h, ...date }] : [];
+    }).sort((a,b) => a.month - b.month || a.day - b.day);
+}
 
 function genId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -1257,15 +1275,16 @@ function renderDashboard() {
         '</div>';
 }
 
-function renderHolidaysForMonth(month, container) {
-    var holidays = IMPORTANT_DATES.filter(function(h) { return h.month === month; });
+function renderHolidaysForMonth(month, container, year = new Date().getFullYear()) {
+    var holidays = importantDatesForYear(year).filter(function(h) { return h.month === month; });
     if (holidays.length === 0) {
         container.innerHTML = '<div class="empty-state">ไม่มีวันสำคัญเดือนนี้</div>';
     } else {
         container.innerHTML = holidays.map(function(h) {
-            return '<div class="holiday-item"><span class="holiday-date">' + h.day + ' ' + THAI_MONTHS_SHORT[h.month] + '</span><div><div class="holiday-name">' + esc(h.name) + '</div></div></div>';
+            return '<div class="holiday-item"><span class="holiday-date">' + h.day + (h.endDay ? '–' + h.endDay : '') + ' ' + THAI_MONTHS_SHORT[h.month] + '</span><div><div class="holiday-name">' + esc(h.name) + '</div></div></div>';
         }).join('');
     }
+    if (!VERIFIED_LUNAR_DATES[year]) container.innerHTML += '<p class="empty-state">วันสำคัญตามจันทรคติปี ' + (year + 543) + ' ยังไม่มีข้อมูลยืนยัน</p>';
 }
 
 function initQuill() {
@@ -1543,7 +1562,7 @@ function renderCalendar() {
     }
     document.getElementById('cal-body').innerHTML = html;
     initCalendarDragDrop();
-    renderHolidaysForMonth(currentCalMonth, document.getElementById('cal-holidays'));
+    renderHolidaysForMonth(currentCalMonth, document.getElementById('cal-holidays'), currentCalYear);
     renderSuggestions();
     renderDayEvents();
 }
@@ -1598,7 +1617,10 @@ function initCalendarDragDrop() {
 }
 
 function getEventsForDate(dateStr) { return data.events.filter(function(e) { return e.date === dateStr; }); }
-function getHolidaysForDate(dateStr) { var d = new Date(dateStr); return IMPORTANT_DATES.filter(function(h) { return h.month === d.getMonth() && h.day === d.getDate(); }); }
+function getHolidaysForDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return importantDatesForYear(year).filter(h => h.month === month - 1 && day >= h.day && day <= (h.endDay || h.day));
+}
 window.selectCalDate = function(dateStr) {
     selectedCalDate = dateStr;
     renderCalendar();
@@ -1606,7 +1628,7 @@ window.selectCalDate = function(dateStr) {
 };
 
 function renderSuggestions() {
-    var suggestions = IMPORTANT_DATES.filter(function(h) { return h.month === currentCalMonth; });
+    var suggestions = importantDatesForYear(currentCalYear).filter(function(h) { return h.month === currentCalMonth; });
     var container = document.getElementById('cal-suggestions');
     if (suggestions.length === 0) {
         container.innerHTML = '<div class="empty-state">ไม่มีคำแนะนำเดือนนี้</div>';
@@ -1980,7 +2002,7 @@ function initKanbanDragDrop() {
 }
 function renderPicker() {
     const list=byId('picker-list'), keyword=byId('picker-search').value.trim().toLowerCase();
-    const rows=loadData().contents.filter(c=>c.status!=='posted' && c.postDate!==selectedCalDate && c.title.toLowerCase().includes(keyword));
+    const rows=loadData().contents.filter(c=>c.status!=='posted' && c.title.toLowerCase().includes(keyword));
     const priority=c=>c.status==='ready' && !c.postDate?0:!c.postDate?1:2;
     rows.sort((a,b)=>priority(a)-priority(b)||a.title.localeCompare(b.title,'th'));
     list.replaceChildren();
@@ -2013,16 +2035,26 @@ byId('picker-save').onclick=async function(){
     if(!ids.length||!date)return;
     const panel=byId('picker-panel'); panel.inert=true;
     try {
-        // One statement schedules every selected story. Update only the scheduling fields.
-        const now=new Date().toISOString();
-        const {data:rows,error}=await sb.from('contents').update({post_date:date,updated_at:now}).in('id',ids).neq('status','posted').select();
-        if(error) throw error;
-        for(const row of rows||[]) {
-            const c=loadData().contents.find(x=>x.id===row.id);if(c)Object.assign(c,unpackContent(row));
+        let savedCount=0;
+        for(const id of ids) {
+            const original=loadData().contents.find(c=>c.id===id);
+            if(!original || original.status==='posted') { checkedStories.delete(id); continue; }
+            const updated={...original, postDate:date, updatedAt:new Date().toISOString()};
+            setQueuePosition(updated,'posted');
+            // Save status, date and posted timestamp together with concurrency protection.
+            if(!await saveContent(updated)) break;
+            Object.assign(original,updated);
+            checkedStories.delete(id);
+            savedCount++;
         }
-        checkedStories.clear(); panel.close(); renderCalendar();
-        showToast('กำหนดวันโพสต์แล้ว '+(rows||[]).length+' จาก '+ids.length+' งาน');
-    } catch {byId('picker-error').textContent='บันทึกวันโพสต์ไม่สำเร็จ กรุณาลองอีกครั้ง';}
+        renderCalendar(); renderKanban(); renderContentList(); renderDashboard();
+        if(!checkedStories.size) panel.close();
+        else {
+            renderPicker();
+            byId('picker-error').textContent='บางงานยังบันทึกไม่สำเร็จ งานที่สำเร็จเปลี่ยนเป็นโพสต์แล้วแล้ว กรุณาโหลดหน้าใหม่ก่อนลองงานที่เหลือ';
+        }
+        showToast('เพิ่มลงปฏิทินและเปลี่ยนเป็นโพสต์แล้ว '+savedCount+' จาก '+ids.length+' งาน');
+    } catch {renderCalendar(); renderPicker(); byId('picker-error').textContent='บันทึกไม่ครบ กรุณาโหลดหน้าใหม่เพื่อตรวจสอบงานที่บันทึกแล้ว';}
     finally {panel.inert=false;}
 };
 
