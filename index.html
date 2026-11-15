@@ -1681,6 +1681,16 @@ function scheduledStoryRow(story) {
     const actions = row.querySelector('.schedule-actions'), form = row.querySelector('form');
     const [move, remove] = actions.querySelectorAll('button');
     const input = form.querySelector('input'), oldDate = story.postDate;
+    let legacyReturnStatus;
+    if (story.status === 'posted' && !story.calendarPreviousStatus) {
+        legacyReturnStatus = document.createElement('select');
+        legacyReturnStatus.setAttribute('aria-label', 'สถานะที่จะคืนสำหรับงานเก่าที่ไม่ได้บันทึกสถานะเดิม');
+        legacyReturnStatus.add(new Option('งานเก่า: เลือกสถานะที่จะคืน', ''));
+        for (const [status, label] of Object.entries(STATUS_LABELS)) {
+            if (status !== 'posted') legacyReturnStatus.add(new Option(label, status));
+        }
+        actions.append(legacyReturnStatus);
+    }
     move.onclick = () => {
         actions.hidden = true; form.hidden = false; input.value = oldDate; input.focus();
     };
@@ -1693,21 +1703,25 @@ function scheduledStoryRow(story) {
         changeDate(input.value);
     };
     remove.onclick = () => {
+        if (legacyReturnStatus && !legacyReturnStatus.value) {
+            showToast('งานนี้ยังไม่มีประวัติสถานะเดิม กรุณาเลือกสถานะที่จะคืนก่อน');
+            legacyReturnStatus.focus();
+            return;
+        }
         if (confirm('เอา “' + story.title + '” ออกจากวันที่ ' + formatDate(oldDate) + ' และเก็บเนื้อเรื่องไว้ใช่ไหม?')) changeDate(null);
     };
     async function changeDate(nextDate) {
         if (row.inert) return;
         row.inert = true;
         try {
-            const {data: saved, error} = await sb.from('contents')
-                .update({post_date: nextDate, updated_at: new Date().toISOString()})
-                .eq('id', story.id).eq('post_date', oldDate).select().maybeSingle();
-            if (error) throw error;
-            if (!saved) { showToast('กำหนดการเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่'); return; }
-            Object.assign(story, unpackContent(saved));
+            const updated = {...story, postDate: nextDate, updatedAt: new Date().toISOString()};
+            if (!nextDate) restoreCalendarStatus(updated, legacyReturnStatus?.value);
+            if (!await saveContent(updated)) return;
+            Object.assign(story, updated);
             renderCalendar();
+            renderKanban(); renderContentList(); renderDashboard();
             if (byId('picker-panel').open) renderPicker();
-            showToast(nextDate ? 'ย้ายไปวันที่ ' + formatDate(nextDate) + ' แล้ว' : 'เอาออกจากวันนี้แล้ว เก็บเนื้อเรื่องไว้แล้ว');
+            showToast(nextDate ? 'ย้ายไปวันที่ ' + formatDate(nextDate) + ' แล้ว' : 'เอาออกจากปฏิทินแล้ว สถานะ: ' + STATUS_LABELS[story.status]);
         } catch {
             showToast('บันทึกวันโพสต์ไม่สำเร็จ กรุณาลองอีกครั้ง');
         } finally { row.inert = false; }
@@ -1899,14 +1913,15 @@ for(const id of ['content-search','content-filter-status','content-filter-member
 
 // Store versioned queue metadata as a non-rendering prefix in the existing rich-text field.
 // This keeps each move atomic with its status, without a database schema migration.
-const metaPattern = /^<!--teamflow-queue:v1 ([a-z]+) (\d+)-->/;
+const metaPattern = /^<!--teamflow-queue:v1 ([a-z]+) (\d+)(?: (waiting_clip|making_clip|making_image|ready))?-->/;
 function unpackContent(row) {
     originalRows.set(row.id,row);
     const body=row.content||'', metadata=body.match(metaPattern);
     return {id:row.id,title:row.title,content:metadata?body.slice(metadata[0].length):body,
         assignedTo:row.assigned_to,status:row.status,postDate:row.post_date,createdAt:row.created_at,
         updatedAt:row.updated_at,voiced:!!row.voiced,rank:metadata?.[1] || legacyRank(row),
-        postedAt:metadata?Number(metadata[2]):(row.status==='posted'?Date.parse(row.updated_at || row.created_at)||0:0)};
+        postedAt:metadata?Number(metadata[2]):(row.status==='posted'?Date.parse(row.updated_at || row.created_at)||0:0),
+        calendarPreviousStatus:metadata?.[3] || null};
 }
 function letters(value) {
     return Array.from(String(value),c=>c.charCodeAt(0).toString(16).padStart(4,'0')).join('').replace(/[0-9a-f]/g,c=>String.fromCharCode(97+parseInt(c,16)));
@@ -1935,10 +1950,20 @@ function setQueuePosition(c,status,before) {
     c.postedAt=status==='posted'?(c.status==='posted' && c.postedAt || Date.now()):0;
     c.status=status;
 }
+function restoreCalendarStatus(c, fallbackStatus) {
+    const previous = c.calendarPreviousStatus || fallbackStatus;
+    if (c.status === 'posted' && previous && previous !== 'posted' && STATUS_LABELS[previous]) {
+        setQueuePosition(c, previous);
+    }
+    c.calendarPreviousStatus = null;
+}
 async function saveContent(c) {
     const old=originalRows.get(c.id);
+    if (c.calendarPreviousStatus === undefined) c.calendarPreviousStatus = old ? unpackContent(old).calendarPreviousStatus : null;
+    if (c.status !== 'posted') c.calendarPreviousStatus = null;
     if(!c.rank || (old && c.status!==old.status && c.rank===unpackContent(old).rank)) setQueuePosition(c,c.status);
-    const row={id:c.id,title:c.title,content:'<!--teamflow-queue:v1 '+c.rank+' '+(c.postedAt||0)+'-->'+(c.content||''),
+    const returnStatus = c.calendarPreviousStatus ? ' '+c.calendarPreviousStatus : '';
+    const row={id:c.id,title:c.title,content:'<!--teamflow-queue:v1 '+c.rank+' '+(c.postedAt||0)+returnStatus+'-->'+(c.content||''),
         assigned_to:c.assignedTo,status:c.status,post_date:c.postDate||null,created_at:c.createdAt,updated_at:c.updatedAt,voiced:!!c.voiced};
     let q;
     if(old) {
@@ -2040,6 +2065,7 @@ byId('picker-save').onclick=async function(){
             const original=loadData().contents.find(c=>c.id===id);
             if(!original || original.status==='posted') { checkedStories.delete(id); continue; }
             const updated={...original, postDate:date, updatedAt:new Date().toISOString()};
+            updated.calendarPreviousStatus = original.status;
             setQueuePosition(updated,'posted');
             // Save status, date and posted timestamp together with concurrency protection.
             if(!await saveContent(updated)) break;
