@@ -8,6 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Team อีนิล - จัดการงานทีม</title>
+    <link rel="stylesheet" href="publish.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -489,6 +490,9 @@ body {
             <a href="#" class="nav-item" data-page="calendar">
                 <i class="fas fa-calendar-alt"></i><span>ปฏิทิน</span>
             </a>
+            <a href="#" class="nav-item" data-page="publish">
+                <i class="fas fa-paper-plane"></i><span>เผยแพร่คอนเทนต์</span>
+            </a>
         </nav>
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
             <i class="fas fa-moon"></i> <span>โหมดมืด</span>
@@ -688,7 +692,51 @@ body {
                 </div>
             </div>
         </section>
+        <section class="page" id="page-publish" aria-labelledby="pub-heading">
+            <div class="page-header">
+                <div><h1 id="pub-heading"><i class="fas fa-paper-plane"></i> เผยแพร่คอนเทนต์</h1><p class="pub-subtitle">คลิปพร้อมแล้ว เตรียมลงทุกช่องทางในที่เดียว</p></div>
+                <button type="button" class="btn btn-secondary" id="pub-connections"><span class="pub-dot"></span> ยังไม่ได้เชื่อมบัญชี</button>
+            </div>
+            <div class="pub-notice"><i class="fas fa-laptop" aria-hidden="true"></i><div><strong>พื้นที่เตรียมโพสต์ของเครื่องนี้</strong><p>ไฟล์และรายการเก็บในเบราว์เซอร์นี้เท่านั้น ยังไม่ส่งขึ้นแพลตฟอร์มหรือแชร์กับทีม การล้างข้อมูลเว็บไซต์จะลบรายการเหล่านี้ โปรดเก็บไฟล์ต้นฉบับไว้</p></div></div>
+            <form id="pub-form" class="pub-layout">
+                <div class="pub-compose card">
+                    <div class="pub-section-title"><span class="pub-step">1</span><h2>เลือกไฟล์ที่พร้อมโพสต์</h2><button type="button" class="btn btn-sm" id="pub-reset">เริ่มใหม่</button></div>
+                    <input type="file" id="pub-file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v,image/jpeg,image/png,.mp4,.mov,.webm,.m4v,.jpg,.jpeg,.png" hidden>
+                    <button type="button" id="pub-drop" class="pub-drop"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i><strong>เลือกไฟล์ หรือลากมาวางที่นี่</strong><span>คลิป MP4, MOV, WebM, M4V · ภาพ JPG, PNG</span><small>ครั้งละ 1 ไฟล์ต่อรายการ • เลือกภาพแล้วจะตั้งปลายทางเป็น Facebook</small></button>
+                    <div id="pub-preview" class="pub-preview" hidden></div>
+                    <p id="pub-file-info" class="pub-file-info" aria-live="polite"></p>
+                    <div id="pub-file-error" class="pub-error" role="alert"></div>
+                    <label class="pub-field">ชื่อคลิป / ชื่อรายการ<input id="pub-title" maxlength="100" required placeholder="เช่น EP.01 — ถ้าวันนี้ไม่มีไฟฟ้า" autocomplete="off"></label>
+                    <label class="pub-field">แคปชัน<textarea id="pub-caption" rows="4" maxlength="5000" placeholder="เตรียมข้อความไว้คัดลอกตอนโพสต์..."></textarea></label>
+                    <p class="pub-help">คลิปแยกตอนและคลิปรวม YouTube ให้บันทึกเป็นคนละรายการ ไม่ต้องผูกกับเนื้อเรื่องหรือสถานะงานเดิม</p>
+                </div>
+                <div class="pub-destinations card">
+                    <div class="pub-section-title"><span class="pub-step">2</span><h2>เลือกช่องทาง</h2></div>
+                    <p class="pub-help">ตรวจเบื้องต้นตามข้อกำหนดการส่งผ่าน Buffer ไม่ใช่ข้อจำกัดของการลงโดยตรง • คลิปเกิน 6 นาทีตั้งไว้ให้ลงเองทุกช่องทาง</p>
+                    <div id="pub-platforms"></div>
+                    <div class="pub-check-summary" id="pub-check-summary" aria-live="polite">เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง</div>
+                    <button class="btn btn-primary pub-full" id="pub-save" type="submit" disabled><i class="fas fa-save"></i> บันทึกรายการเตรียมโพสต์</button>
+                    <button class="btn btn-secondary pub-full" type="button" disabled>ส่งอัตโนมัติ — ยังไม่ได้เชื่อมบัญชี</button>
+                    <p class="pub-help">บันทึกรายการแล้วเปิด “ลงเอง” เพื่อดาวน์โหลดไฟล์ คัดลอกแคปชัน และบันทึกลิงก์โพสต์ได้</p>
+                    <details class="pub-rules"><summary>เกณฑ์ตรวจไฟล์และแหล่งข้อมูล</summary><p>Facebook Reels: 3–90 วินาที, 9:16, อย่างน้อย 540 × 960 px, ไม่เกิน 1 GB<br>YouTube Shorts: ไม่เกิน 3 นาที, แนวตั้งหรือจัตุรัส, ไม่เกิน 10 GB<br>TikTok: 3 วินาที–10 นาที, อย่างน้อย 360 × 360 px, ไม่เกิน 1 GB</p><p>ตรวจจากข้อมูลที่เบราว์เซอร์อ่านได้ ยังไม่ยืนยันเฟรมเรต สิทธิ์เพลง หรือข้อจำกัดเฉพาะบัญชี ผลผ่านจึงยังไม่ใช่การรับรองว่าเผยแพร่ได้</p><a href="https://support.buffer.com/en-us/articles/sharing-videos-through-buffer-LOe2p2rnAI" target="_blank" rel="noopener noreferrer">ข้อกำหนด Buffer · ตรวจเมื่อ 15 พ.ย. 2569 ↗</a></details>
+                </div>
+            </form>
+            <div class="pub-library-header"><div><h2>รายการเตรียมโพสต์ <span id="pub-count">0</span></h2><p class="pub-help">ยืนยันแยกช่องทางหลังลงเองสำเร็จ</p></div><label>แสดง <select id="pub-filter"><option value="all">ทั้งหมด</option><option value="pending">ยังลงไม่ครบ</option><option value="posted">ลงครบแล้ว</option></select></label></div>
+            <div id="pub-library" class="pub-library" aria-live="polite"></div>
+            <p id="pub-message" class="pub-message" role="status"></p>
+        </section>
     </main>
+    <dialog id="pub-manual" class="pub-dialog" aria-labelledby="pub-manual-title">
+        <form method="dialog"><button class="btn btn-sm pub-close" aria-label="ปิด">✕</button></form>
+        <h2 id="pub-manual-title">ลงเอง</h2><p id="pub-manual-name" class="pub-subtitle"></p>
+        <p class="pub-help">ดาวน์โหลดไฟล์และนำไปลงที่ช่องทางนี้ จากนั้นกลับมายืนยันเมื่อเผยแพร่สำเร็จ</p>
+        <div class="pub-manual-actions"><button class="btn btn-secondary" id="pub-download" type="button">ดาวน์โหลดไฟล์</button><button class="btn btn-secondary" id="pub-copy" type="button">คัดลอกแคปชัน</button><a class="btn btn-secondary" id="pub-open-platform" target="_blank" rel="noopener noreferrer">เปิดแพลตฟอร์ม ↗</a></div>
+        <form id="pub-confirm-form"><label class="pub-field">ลิงก์โพสต์ (ไม่บังคับ)<input type="url" id="pub-post-url" placeholder="https://..." maxlength="2048"></label><label class="pub-confirm"><input type="checkbox" id="pub-confirmed" required> ฉันตรวจแล้วว่าโพสต์เผยแพร่สำเร็จบนช่องทางนี้</label><p id="pub-manual-error" class="pub-error" role="alert"></p><button class="btn btn-primary pub-full" type="submit">ยืนยันว่าลงเองแล้ว</button></form>
+    </dialog>
+    <dialog id="pub-connection-dialog" class="pub-dialog" aria-labelledby="pub-connection-title">
+        <form method="dialog"><button class="btn btn-sm pub-close" aria-label="ปิด">✕</button></form>
+        <h2 id="pub-connection-title">การเชื่อมต่อช่องทาง</h2><p class="pub-subtitle">ยังไม่มีบัญชีเชื่อมต่อ</p><p>ตอนนี้ใช้งานเลือกไฟล์ ตรวจข้อจำกัด และเตรียมลงเองได้แล้ว การส่งอัตโนมัติต้องเชื่อมบัญชีและตั้งค่าระบบส่งโพสต์เพิ่มเติม</p><ol><li>สมัคร Buffer และเชื่อม Facebook Page, TikTok และ YouTube</li><li>ตั้งค่าการเชื่อมต่อผ่านระบบหลังบ้านของเว็บ</li><li>ทดสอบส่งโพสต์จริงก่อนเปิดใช้งานอัตโนมัติ</li></ol><a href="https://buffer.com/" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">เปิดเว็บไซต์ Buffer ↗</a>
+    </dialog>
 
     <!-- ==================== MODALS ==================== -->
 
@@ -2088,5 +2136,7 @@ setInterval(()=>{if(dataReady && byId('page-workflow').classList.contains('activ
 renderDashboard();
 initCalendar();
     </script>
+    <script src="publish-rules.js?v=1"></script>
+    <script src="publish.js?v=1"></script>
 </body>
 </html>

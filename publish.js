@@ -1,0 +1,191 @@
+(function() {
+    'use strict';
+    const R=window.PublishRules, $=id=>document.getElementById(id);
+    let current=null, previewUrl='', inspectVersion=0, busy=false, records=[], manual=null, dbPromise;
+    const selected=new Set(['facebook','tiktok','youtube']);
+    const text=(tag,value,cls)=>{const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;};
+    function message(value){$('pub-message').textContent=value;}
+    function database(){
+        if(!dbPromise)dbPromise=new Promise((resolve,reject)=>{
+            const request=indexedDB.open('teamflow-publishing',1);
+            request.onupgradeneeded=()=>request.result.createObjectStore('posts',{keyPath:'id'});
+            request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result);};
+            request.onerror=()=>reject(request.error);
+            request.onblocked=()=>reject(new Error('Storage blocked'));
+        }).catch(error=>{dbPromise=null;throw error;});
+        return dbPromise;
+    }
+    async function store(action,value){
+        const db=await database();
+        return new Promise((resolve,reject)=>{
+            const tx=db.transaction('posts',action==='getAll'?'readonly':'readwrite');
+            const req=tx.objectStore('posts')[action](...(value===undefined?[]:[value]));
+            tx.oncomplete=()=>resolve(req.result);
+            tx.onabort=()=>reject(tx.error||new Error('Storage failed'));
+            tx.onerror=()=>reject(tx.error||new Error('Storage failed'));
+        });
+    }
+    function reset(){
+        inspectVersion++;
+        if(previewUrl)URL.revokeObjectURL(previewUrl);
+        previewUrl='';current=null;
+        $('pub-form').reset();$('pub-preview').replaceChildren();$('pub-preview').hidden=true;
+        $('pub-file').value='';$('pub-file-info').textContent='';$('pub-file-error').textContent='';
+        $('pub-drop').querySelector('strong').textContent='เลือกไฟล์ หรือลากมาวางที่นี่';
+        selected.clear();['facebook','tiktok','youtube'].forEach(p=>selected.add(p));
+        renderChecks();
+    }
+    function inspect(file,url){
+        return new Promise((resolve,reject)=>{
+            const kind=/\.(jpe?g|png)$/i.test(file.name)?'image':/\.(mp4|mov|webm|m4v)$/i.test(file.name)?'video':null;
+            if(!kind||!file.size){reject(new Error('กรุณาเลือกคลิป MP4, MOV, WebM, M4V หรือภาพ JPG, PNG ที่มีข้อมูล'));return;}
+            const media=document.createElement(kind==='video'?'video':'img');
+            const cleanup=()=>{clearTimeout(timer);media.onload=null;media.onloadedmetadata=null;media.onerror=null;if(kind==='video'){media.removeAttribute('src');media.load();}};
+            const fail=()=>{cleanup();reject(new Error('เบราว์เซอร์อ่านไฟล์นี้ไม่ได้ ลองส่งออกเป็น MP4 (H.264) หรือภาพ JPG/PNG แล้วเลือกใหม่'));};
+            const timer=setTimeout(fail,20000);
+            const done=()=>{
+                const meta={name:file.name,size:file.size,type:file.type,kind,width:kind==='video'?media.videoWidth:media.naturalWidth,height:kind==='video'?media.videoHeight:media.naturalHeight,duration:kind==='video'?media.duration:0};
+                if(!meta.width||!meta.height||(kind==='video'&&(!Number.isFinite(meta.duration)||meta.duration<=0))){fail();return;}
+                cleanup();resolve(meta);
+            };
+            media.onerror=fail;
+            if(kind==='video'){media.preload='metadata';media.onloadedmetadata=done;}else media.onload=done;
+            media.src=url;
+        });
+    }
+    async function choose(file){
+        if(busy||!file)return;
+        const version=++inspectVersion;
+        current=null;renderChecks();
+        if(previewUrl)URL.revokeObjectURL(previewUrl);
+        const url=URL.createObjectURL(file);previewUrl=url;
+        $('pub-preview').replaceChildren();$('pub-preview').hidden=true;
+        $('pub-file-error').textContent='';$('pub-file-info').textContent='กำลังอ่านข้อมูลไฟล์…';
+        try {
+            const meta=await inspect(file,url);
+            if(version!==inspectVersion)return;
+            current={file,meta};
+            if(meta.kind==='image'){selected.clear();selected.add('facebook');}
+            const preview=document.createElement(meta.kind==='video'?'video':'img');
+            if(meta.kind==='video'){preview.controls=true;preview.playsInline=true;preview.preload='metadata';}else preview.alt='ตัวอย่าง '+file.name;
+            preview.src=url;$('pub-preview').append(preview);$('pub-preview').hidden=false;
+            $('pub-title').value=file.name.replace(/\.[^.]+$/,'').slice(0,100);
+            $('pub-file-info').textContent=file.name+' · '+(file.size/1e6).toFixed(1)+' MB · '+meta.width+' × '+meta.height+' px'+(meta.kind==='video'?' · '+R.duration(meta.duration)+' นาที':'');
+            $('pub-drop').querySelector('strong').textContent='เปลี่ยนไฟล์ หรือลากไฟล์ใหม่มาวาง';
+        }catch(error){
+            if(version!==inspectVersion)return;
+            $('pub-file-error').textContent=error.message;$('pub-file-info').textContent='';
+            URL.revokeObjectURL(url);previewUrl='';
+        }
+        renderChecks();
+    }
+    function renderChecks(){
+        const wrap=$('pub-platforms');wrap.replaceChildren();
+        let manualCount=0;
+        for(const [id,p]of Object.entries(R.platforms)){
+            const result=R.check(current?.meta,id),box=document.createElement('div');
+            box.className='pub-platform'+(selected.has(id)?'':' off');box.dataset.result=selected.has(id)?result.kind:'';
+            const label=document.createElement('label'),checkbox=document.createElement('input');
+            checkbox.type='checkbox';checkbox.checked=selected.has(id);checkbox.disabled=busy;
+            checkbox.onchange=()=>{checkbox.checked?selected.add(id):selected.delete(id);renderChecks();};
+            const icon=document.createElement('i');icon.className=p.icon+' pub-platform-icon';icon.setAttribute('aria-hidden','true');
+            label.append(checkbox,icon,text('strong',p.name),text('span',p.label));box.append(label);
+            if(selected.has(id)){
+                if(result.kind==='manual')manualCount++;
+                box.append(text('p',(result.kind==='manual'?'⚠ ':result.kind==='preliminary'?'✓ ':'')+result.reasons.join(' • ')));
+            }
+            wrap.append(box);
+        }
+        $('pub-save').disabled=busy||!current||!selected.size;
+        $('pub-check-summary').textContent=!current?'เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง':!selected.size?'กรุณาเลือกอย่างน้อย 1 ช่องทาง':manualCount?'ต้องลงเอง '+manualCount+' จาก '+selected.size+' ช่องทาง • ช่องทางอื่นยังรอเชื่อมบัญชี':'ผ่านเกณฑ์เบื้องต้น '+selected.size+' ช่องทาง • ยังไม่มีบัญชีเชื่อมต่อ จึงยังไม่ส่งโพสต์';
+    }
+    $('pub-drop').onclick=()=>$('pub-file').click();
+    $('pub-file').onchange=()=>choose($('pub-file').files[0]);
+    for(const name of ['dragenter','dragover'])$('pub-drop').addEventListener(name,e=>{e.preventDefault();$('pub-drop').classList.add('drag-over');});
+    $('pub-drop').addEventListener('dragleave',()=>$('pub-drop').classList.remove('drag-over'));
+    $('pub-drop').addEventListener('drop',e=>{
+        e.preventDefault();$('pub-drop').classList.remove('drag-over');
+        if(e.dataTransfer.files.length!==1){$('pub-file-error').textContent='กรุณาเลือกครั้งละ 1 ไฟล์ แต่ละตอนบันทึกเป็นคนละรายการ';return;}
+        choose(e.dataTransfer.files[0]);
+    });
+    $('pub-reset').onclick=()=>{if(!busy&&(!current||confirm('เริ่มรายการใหม่? ไฟล์ที่ยังไม่ได้บันทึกจะถูกนำออกจากฟอร์ม'))){reset();}};
+    $('pub-form').onsubmit=async e=>{
+        e.preventDefault();if(busy||!current||!selected.size)return;
+        const title=$('pub-title').value.trim();if(!title){$('pub-title').focus();return;}
+        busy=true;$('pub-form').inert=true;renderChecks();$('pub-save').textContent='กำลังบันทึกไฟล์ในเครื่อง…';
+        const item={id:crypto.randomUUID(),title,caption:$('pub-caption').value,meta:current.meta,file:current.file,createdAt:new Date().toISOString(),targets:{}};
+        for(const id of selected)item.targets[id]={status:R.check(item.meta,id).kind==='manual'?'manual':'connection',url:'',postedAt:null};
+        try{
+            await store('put',item);records.unshift(item);reset();renderLibrary();
+            message('บันทึก “'+title+'” ในเบราว์เซอร์นี้แล้ว ยังไม่ได้เผยแพร่');
+        }catch{
+            $('pub-file-error').textContent='บันทึกไฟล์ไม่ได้ พื้นที่เบราว์เซอร์อาจไม่พอหรือถูกปิดใช้งาน ไฟล์ยังอยู่ในฟอร์ม กรุณาเก็บไฟล์ต้นฉบับไว้';
+        }finally{busy=false;$('pub-form').inert=false;$('pub-save').innerHTML='<i class="fas fa-save"></i> บันทึกรายการเตรียมโพสต์';renderChecks();}
+    };
+    function renderLibrary(){
+        const list=$('pub-library');list.replaceChildren();$('pub-count').textContent=records.length;
+        const filter=$('pub-filter').value;
+        const visible=records.filter(item=>filter==='all'||(Object.values(item.targets).every(t=>t.status==='posted')?filter==='posted':filter==='pending'));
+        if(!visible.length){const empty=text('div',records.length?'ไม่มีรายการในหมวดนี้':'ยังไม่มีรายการ — เลือกไฟล์ด้านบนเพื่อเตรียมโพสต์แรก','pub-empty');list.append(empty);return;}
+        for(const item of visible){
+            const card=document.createElement('article');card.className='pub-record';
+            const top=document.createElement('div');top.className='pub-record-top';
+            const icon=document.createElement('i');icon.className=item.meta.kind==='video'?'fas fa-film':'fas fa-image';
+            const info=document.createElement('div');info.append(text('h3',item.title),text('small',item.meta.name+' · '+(item.meta.kind==='video'?R.duration(item.meta.duration)+' นาที · ':'')+new Date(item.createdAt).toLocaleDateString('th-TH')));
+            const remove=text('button','ลบ','btn btn-sm');remove.type='button';remove.setAttribute('aria-label','ลบรายการ '+item.title);
+            remove.onclick=async()=>{
+                if(!confirm('ลบรายการและสำเนาไฟล์ในเบราว์เซอร์นี้? โพสต์ที่ลงบนแพลตฟอร์มแล้วจะไม่ถูกลบ'))return;
+                remove.disabled=true;
+                try{await store('delete',item.id);records=records.filter(x=>x.id!==item.id);renderLibrary();message('ลบรายการในเครื่องแล้ว');}catch{message('ลบรายการไม่สำเร็จ กรุณาลองใหม่');remove.disabled=false;}
+            };
+            top.append(icon,info,remove);card.append(top);
+            for(const [id,target]of Object.entries(item.targets)){
+                const row=document.createElement('div');row.className='pub-record-target';const detail=document.createElement('div');
+                const checked=R.check(item.meta,id);
+                detail.append(text('strong',R.platforms[id].name));
+                detail.append(text('p',target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':target.status==='manual'?'รอลงเอง · '+checked.reasons[0]:'รอเชื่อมบัญชี · สามารถลงเองก่อนได้',target.status==='posted'?'pub-posted':''));
+                if(target.url){const a=text('a','เปิดโพสต์ ↗');a.href=target.url;a.target='_blank';a.rel='noopener noreferrer';detail.append(a);}
+                const action=text('button',target.status==='posted'?'ดูรายละเอียด':'ลงเอง','btn btn-sm');action.type='button';action.onclick=()=>openManual(item,id);
+                row.append(detail,action);card.append(row);
+            }
+            list.append(card);
+        }
+    }
+    function openManual(item,platform){
+        manual={item,platform};$('pub-manual-title').textContent='ลงเอง · '+R.platforms[platform].name;
+        $('pub-manual-name').textContent=item.title;
+        $('pub-post-url').value=item.targets[platform].url;$('pub-confirmed').checked=item.targets[platform].status==='posted';
+        $('pub-manual-error').textContent='';$('pub-open-platform').href=R.platforms[platform].url;
+        $('pub-manual').showModal();
+    }
+    $('pub-download').onclick=()=>{
+        if(!manual)return;
+        const url=URL.createObjectURL(manual.item.file),link=document.createElement('a');link.href=url;link.download=manual.item.meta.name;
+        document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    };
+    $('pub-copy').onclick=async()=>{
+        if(!manual)return;
+        try{await navigator.clipboard.writeText(manual.item.caption||manual.item.title);$('pub-manual-error').textContent='คัดลอกแล้ว';}
+        catch{$('pub-manual-error').textContent='คัดลอกอัตโนมัติไม่ได้ เลือกข้อความด้านล่างเพื่อคัดลอก';const area=document.createElement('textarea');area.value=manual.item.caption||manual.item.title;$('pub-manual-error').append(area);area.select();}
+    };
+    $('pub-confirm-form').onsubmit=async e=>{
+        e.preventDefault();if(!manual||!$('pub-confirmed').checked)return;
+        const url=$('pub-post-url').value.trim();
+        if(!R.validPostUrl(url,manual.platform)){$('pub-manual-error').textContent='กรุณาใช้ลิงก์ HTTPS ของ '+R.platforms[manual.platform].name+' หรือเว้นว่าง';return;}
+        const {item,platform}=manual, updated={...item,targets:{...item.targets,[platform]:{status:'posted',url,postedAt:item.targets[platform].postedAt||new Date().toISOString()}}};
+        $('pub-confirm-form').inert=true;
+        try{await store('put',updated);records=records.map(x=>x.id===item.id?updated:x);$('pub-manual').close();renderLibrary();message('บันทึกการยืนยันว่าลง '+R.platforms[platform].name+' เองแล้ว');}
+        catch{$('pub-manual-error').textContent='บันทึกการยืนยันไม่สำเร็จ กรุณาลองใหม่';}
+        finally{$('pub-confirm-form').inert=false;}
+    };
+    $('pub-manual').addEventListener('close',()=>{manual=null;});
+    $('pub-filter').onchange=renderLibrary;
+    $('pub-connections').onclick=()=>$('pub-connection-dialog').showModal();
+    window.addEventListener('beforeunload',e=>{if(current||busy){e.preventDefault();e.returnValue='';}});
+    renderChecks();
+    if(location.hash==='#publish' && typeof navigateTo==='function') navigateTo('publish');
+    store('getAll').then(items=>{records=items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));renderLibrary();}).catch(()=>{
+        $('pub-library').append(text('div','เปิดพื้นที่เก็บข้อมูลไม่ได้ กรุณาอนุญาตข้อมูลเว็บไซต์หรือใช้เบราว์เซอร์ปกติ','pub-empty'));
+        message('ยังตรวจไฟล์ได้ แต่การเก็บรายการต้องใช้พื้นที่จัดเก็บของเบราว์เซอร์');
+    });
+})();
