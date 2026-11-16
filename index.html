@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
     <!-- Codex deploy test 2026-11-09 -->
     <meta charset="UTF-8">
@@ -379,11 +379,6 @@ body {
 #picker-search{width:100%;font:inherit;padding:7px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text)}#picker-panel h4{margin:12px 0 6px}#picker-open{margin-top:10px}
 @media(max-width:768px){.kanban-board{flex-direction:row;scroll-snap-type:x proximity}.kanban-column{min-width:78%;scroll-snap-align:start}.story-head{display:none}.story-line:not(.story-head){grid-template-columns:1fr auto;gap:4px 10px}.story-line .story-title{grid-column:1/-1}.story-line .row-status{grid-row:2/4;grid-column:2}}
 
-:root:not([data-theme="dark"]) .sidebar{--sidebar-bg:#fff;--sidebar-text:#444052;border-right:1px solid var(--border)}
-:root:not([data-theme="dark"]) .sidebar :is(.logo,.member-info .name){color:var(--text)}
-:root:not([data-theme="dark"]) .sidebar :is(.member-info .role,.sidebar-team h4,.theme-toggle){color:var(--text-secondary)}
-:root:not([data-theme="dark"]) .sidebar :is(.sidebar-header,.sidebar-team,.theme-toggle){border-color:var(--border)}
-:root:not([data-theme="dark"]) .nav-item:is(:hover,.active){color:#543cb9;background:#efeaff}
 @media(min-width:1100px){.dashboard-grid{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}.dashboard-grid>.card:first-child{grid-row:span 2}}
 .cal-day.selected{outline:2px solid var(--primary);outline-offset:-2px}
 .schedule-actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; }
@@ -431,12 +426,14 @@ body {
         .kanban-column { flex:0 0 min(80%,320px); min-width:0; }
     }
     </style>
+    <link rel="stylesheet" href="midnight.css?v=1">
+    <script src="theme-init.js?v=1"></script>
 </head>
 <body>
     <!-- PIN Lock -->
     <div class="pin-overlay" id="pinOverlay">
         <div class="pin-box" id="pinSetup" style="display:none">
-            <div class="pin-logo"><i class="fas fa-bolt"></i></div>
+            <div class="pin-logo"><img src="assets/logo-midnight-silver.png" alt="อีนิล Studio"></div>
             <h2>Team อีนิล</h2>
             <p>ตั้งรหัส PIN 4 หลัก สำหรับเข้าใช้งาน</p>
             <div class="pin-input" id="setupPinInputs">
@@ -456,7 +453,7 @@ body {
             <div class="pin-error" id="setupError"></div>
         </div>
         <div class="pin-box" id="pinLogin" style="display:none">
-            <div class="pin-logo"><i class="fas fa-lock"></i></div>
+            <div class="pin-logo"><img src="assets/logo-midnight-silver.png" alt="อีนิล Studio"></div>
             <h2>Team อีนิล</h2>
             <p>ใส่รหัส PIN เพื่อเข้าใช้งาน</p>
             <div class="pin-input" id="loginPinInputs">
@@ -473,11 +470,11 @@ body {
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <i class="fas fa-bolt"></i>
-                <span>Team อีนิล</span>
+                <img class="studio-logo" src="assets/logo-midnight-silver.png" alt="อีนิล">
+                <span class="studio-word">STUDIO</span>
             </div>
         </div>
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="เมนูหลัก">
             <a href="#" class="nav-item active" data-page="dashboard">
                 <i class="fas fa-th-large"></i><span>แดชบอร์ด</span>
             </a>
@@ -529,15 +526,19 @@ body {
         <!-- Mobile Header -->
         <div class="mobile-header">
             <button class="menu-toggle" id="menuToggle" aria-label="เปิดเมนู" aria-expanded="false" aria-controls="sidebar"><i class="fas fa-bars"></i></button>
-            <span class="mobile-title">Team อีนิล</span>
+            <span class="mobile-title"><img src="assets/logo-midnight-silver.png" alt="อีนิล Studio"></span>
         </div>
+
+        <div class="studio-topbar"><span>Workspace <strong>/ ทีมอีนิล</strong></span><span class="studio-mark">CREATE WITH PURPOSE</span></div>
 
         <!-- ==================== DASHBOARD ==================== -->
         <section class="page active" id="page-dashboard">
+            <p class="page-kicker">YOUR CREATIVE WORKSPACE</p>
             <div class="page-header">
                 <h1><i class="fas fa-th-large"></i> แดชบอร์ด</h1>
                 <p class="subtitle" id="dashboard-date"></p>
             </div>
+<div class="studio-hero"><div><div class="hero-eyebrow">LET’S MAKE IT HAPPEN</div><h2>ทุกเรื่องเล่า เริ่มต้นที่ทีมเรา</h2><p>รวมไอเดีย จัดการงาน และวางแผนโพสต์<br>ให้ทุกเรื่องราวพร้อมไปถึงคนดู</p><button class="hero-action" onclick="navigateTo('content')">เปิดพื้นที่เนื้อเรื่อง <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><img src="assets/logo-midnight-silver.png" alt="อีนิล — Midnight Studio"></div>
 <div class="stats-grid"><button class="stat-card" id="stat-today" style="--accent:#6C5CE7" onclick="showDashboardQueue('today')"><i class="stat-icon fas fa-calendar-day"></i><span><strong class="stat-number">0</strong>ต้องโพสต์วันนี้</span></button><button class="stat-card" id="stat-overdue" style="--accent:#DA565C" onclick="showDashboardQueue('overdue')"><i class="stat-icon fas fa-exclamation-circle"></i><span><strong class="stat-number">0</strong>เลยกำหนด</span></button><button class="stat-card" id="stat-unscheduled" style="--accent:#16866E" onclick="showDashboardQueue('unscheduled')"><i class="stat-icon fas fa-calendar-plus"></i><span><strong class="stat-number">0</strong>พร้อมโพสต์แต่ยังไม่เลือกวัน</span></button></div>
             <div class="dashboard-grid">
                 <div class="card">
@@ -565,6 +566,7 @@ body {
 
         <!-- ==================== CONTENT ==================== -->
         <section class="page" id="page-content">
+            <p class="page-kicker">STORY LIBRARY</p>
             <div class="page-header">
                 <h1><i class="fas fa-file-alt"></i> เนื้อเรื่อง</h1>
                 <button class="btn btn-primary" id="btn-new-content">
@@ -605,6 +607,7 @@ body {
 
         <!-- ==================== WORKFLOW ==================== -->
         <section class="page" id="page-workflow">
+            <p class="page-kicker">PRODUCTION BOARD</p>
             <div class="page-header">
                 <h1><i class="fas fa-columns"></i> สถานะงาน</h1>
             </div>
@@ -654,6 +657,7 @@ body {
 
         <!-- ==================== CALENDAR ==================== -->
         <section class="page" id="page-calendar">
+            <p class="page-kicker">CONTENT CALENDAR</p>
             <div class="page-header">
                 <h1><i class="fas fa-calendar-alt"></i> ปฏิทิน</h1>
                 <button class="btn btn-primary" id="btn-new-event">
@@ -693,6 +697,7 @@ body {
             </div>
         </section>
         <section class="page" id="page-publish" aria-labelledby="pub-heading">
+            <p class="page-kicker">PUBLISHING STUDIO</p>
             <div class="page-header">
                 <div><h1 id="pub-heading"><i class="fas fa-paper-plane"></i> เผยแพร่คอนเทนต์</h1><p class="pub-subtitle">คลิปพร้อมแล้ว เตรียมลงทุกช่องทางในที่เดียว</p></div>
                 <button type="button" class="btn btn-secondary" id="pub-connections"><span class="pub-dot"></span> ยังไม่ได้เชื่อมบัญชี</button>
@@ -1221,7 +1226,7 @@ function toggleTheme() {
 }
 (function() {
     var saved = localStorage.getItem('teamflow_theme');
-    if (saved === 'dark') {
+    if (saved !== 'light') {
         document.documentElement.setAttribute('data-theme', 'dark');
         var btn = document.getElementById('themeToggle');
         if (btn) btn.innerHTML = '<i class="fas fa-sun"></i> <span>โหมดสว่าง</span>';
