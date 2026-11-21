@@ -2,6 +2,18 @@
     'use strict';
     const R=window.PublishRules, B=window.PublishBuffer, $=id=>document.getElementById(id);
     let sendSelection=null;
+    const S=window.PublishSchedule;
+    function updateSchedule(){
+        const custom=$('pub-schedule-mode').value==='custom';
+        $('pub-schedule-field').hidden=!custom;$('pub-schedule-at').required=custom;
+        $('pub-send-submit').textContent=custom?'อัปโหลดและตั้งเวลาโพสต์':'อัปโหลดและส่งเข้าคิว';
+        $('pub-schedule-error').textContent='';
+        if(!custom){$('pub-schedule-preview').textContent='แต่ละช่องทางใช้เวลาว่างถัดไปตามคิวของตนเอง';return;}
+        try{$('pub-schedule-preview').textContent='จะส่งให้ทุกช่องทางเผยแพร่: '+S.format(S.parse($('pub-schedule-at').value));}
+        catch(e){$('pub-schedule-preview').textContent='';$('pub-schedule-error').textContent=e.message;}
+    }
+    $('pub-schedule-mode').onchange=updateSchedule;
+    $('pub-schedule-at').oninput=updateSchedule;
     const deliveryLabels={sending:'กำลังส่ง / รอตรวจสอบผลใน Buffer',queued:'เข้าคิว Buffer แล้ว · ยังไม่ยืนยันว่าเผยแพร่',unknown:'ยังยืนยันผลไม่ได้ · ตรวจใน Buffer ก่อนลงเอง',rejected:'Buffer ไม่รับรายการ · ตรวจข้อกำหนดใน Buffer',sent:'เผยแพร่แล้ว · ยืนยันจาก Buffer',scheduled:'รอเผยแพร่ตามคิว Buffer',error:'เผยแพร่ไม่สำเร็จ · ตรวจใน Buffer',draft:'เป็นร่างใน Buffer',needs_approval:'รออนุมัติใน Buffer'};
     let current=null, previewUrl='', inspectVersion=0, busy=false, records=[], manual=null, dbPromise;
     const selected=new Set(['facebook','tiktok','youtube']);
@@ -149,6 +161,11 @@
                     if(item.meta.size>52428800){message('ไฟล์เกิน 50 MB สำหรับอัปโหลด กรุณาลดขนาดไฟล์หรือลงเอง');return;}
                     if(eligible.some(id=>!B.channel(id))){message('บางช่องทางยังไม่ได้ตั้งค่า กรุณาตรวจบัญชีผู้โพสต์');return;}
                     sendSelection={item,platforms:eligible};$('pub-send-form').reset();
+                    $('pub-custom-option').disabled=!B.canSchedule();
+                    $('pub-schedule-availability').textContent=B.canSchedule()?'ตั้งล่วงหน้าอย่างน้อย 5 นาที และเผื่อเวลาอัปโหลดไฟล์':'การกำหนดเวลาเองรออัปเดตฟังก์ชัน Supabase • ยังส่งเข้าคิวเดิมได้';
+                    $('pub-schedule-at').min=S.localValue(Date.now()+6*60000);
+                    $('pub-schedule-at').value=S.localValue(Date.now()+30*60000);
+                    updateSchedule();
                     const video=item.meta.kind==='video';
                     $('pub-ai').closest('label').hidden=!video;
                     $('pub-ai').required=video;
@@ -162,7 +179,10 @@
                 const row=document.createElement('div');row.className='pub-record-target';const detail=document.createElement('div');
                 const checked=R.check(item.meta,id);
                 detail.append(text('strong',R.platforms[id].name));
+                if(target.sendError)detail.append(text('p',target.sendError,'pub-error'));
                 detail.append(text('p',target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':deliveryLabels[target.status]|| (target.status==='manual'?'รอลงเอง · '+checked.reasons[0]:'พร้อมเตรียมส่ง · หรือลงเองได้'),target.status==='posted'?'pub-posted':''));
+                if(target.dueAt&&Number.isFinite(Date.parse(target.dueAt)))detail.append(text('p','เวลาใน Buffer: '+S.format(target.dueAt)));
+                else if(target.requestedDueAt&&Number.isFinite(Date.parse(target.requestedDueAt)))detail.append(text('p','เวลาที่ขอ: '+S.format(target.requestedDueAt)+' · กดตรวจสถานะเพื่อยืนยัน'));
                 if(target.url && R.validPostUrl(target.url,id)){const a=text('a','เปิดโพสต์ ↗');a.href=target.url;a.target='_blank';a.rel='noopener noreferrer';detail.append(a);}
                 const action=text('button',target.status==='posted'?'ดูรายละเอียด':'ลงเอง','btn btn-sm');action.type='button';action.onclick=()=>openManual(item,id);
                 action.disabled=busy;
@@ -173,6 +193,7 @@
                             if(result.state!=='not_sent'){
                                 target.status=result.providerStatus||result.state;
                                 target.postId=result.post_id||target.postId;
+                                if(Object.hasOwn(result,'dueAt'))target.dueAt=result.dueAt;
                                 if(result.url&&R.validPostUrl(result.url,id))target.url=result.url;
                                 await store('put',item);renderLibrary();
                             }else{message('ไม่พบการส่งในบัญชีนี้ กรุณาตรวจบัญชีผู้โพสต์');}
@@ -189,6 +210,11 @@
         e.preventDefault();if(busy||!sendSelection)return;
         const {item,platforms}=sendSelection;
         const options={aiGenerated:$('pub-ai').value==='yes',madeForKids:$('pub-kids').value==='yes'};
+        options.scheduleMode=$('pub-schedule-mode').value;
+        if(options.scheduleMode==='custom'){
+            try{if(!B.canSchedule())throw new Error('ต้องอัปเดตฟังก์ชัน Supabase ก่อนใช้การกำหนดเวลา');options.dueAt=S.parse($('pub-schedule-at').value);}
+            catch(error){$('pub-schedule-error').textContent=error.message;return;}
+        }
         busy=true;$('pub-send-dialog').close();$('pub-form').inert=true;renderChecks();renderLibrary();
         try{
             message('กำลังอัปโหลดไฟล์…');
@@ -196,12 +222,15 @@
             await B.upload(item);await store('put',item);
             for(const id of platforms){
                 message('กำลังส่ง '+R.platforms[id].name+'…');
-                item.targets[id]={...item.targets[id],status:'sending'};
+                item.targets[id]={...item.targets[id],status:'sending',requestedDueAt:options.dueAt||null};
                 await store('put',item);renderLibrary();
                 try{
                     const result=await B.send(item,id,options);
-                    item.targets[id]={...item.targets[id],status:result.state,postId:result.post_id};
-                }catch(e){item.targets[id].status='unknown';message(e.message);}
+                    item.targets[id]={...item.targets[id],status:result.state,postId:result.post_id,sendError:null};
+                }catch(e){
+                    item.targets[id].status=['INVALID_SCHEDULE','SCHEDULE_UNAVAILABLE'].includes(e.code)?'connection':'unknown';
+                    item.targets[id].sendError=e.message;message(e.message);
+                }
                 await store('put',item);renderLibrary();
             }
             message('ส่งคำขอครบแล้ว ดูผลแยกแต่ละช่องด้านล่าง • เข้าคิวยังไม่เท่ากับเผยแพร่แล้ว');

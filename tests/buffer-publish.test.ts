@@ -1,10 +1,10 @@
-import {createHandler,validate} from '../supabase/functions/buffer-publish/index.ts';
+import {createHandler,validate,validateSchedule} from '../supabase/functions/buffer-publish/index.ts';
 const assert=(v:unknown)=>{if(!v)throw new Error('Assertion failed');};
 const uid='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const input={action:'send',id,platform:'youtube',title:'Test',caption:'Caption',aiGenerated:false,madeForKids:false,
  meta:{name:'a.mp4',kind:'video',size:1024,width:1080,height:1920,duration:60}};
 function harness(options:{denyAuth?:boolean;denyRole?:boolean;missingFile?:boolean;timeout?:boolean;badStore?:boolean;reject?:boolean}={}){
- let entry:any=null,mutations=0;
+ let entry:any=null,mutations=0;const sentInputs:any[]=[];
  const handler=createHandler({env:n=>({SUPABASE_URL:'https://test.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-secret',BUFFER_API_KEY:'buffer-secret'}[n]),
   fetch:async(url,init)=>{
    const path=String(url),body=init?.body?JSON.parse(String(init.body)):null;
@@ -20,6 +20,7 @@ function harness(options:{denyAuth?:boolean;denyRole?:boolean;missingFile?:boole
    if(path==='https://api.buffer.com'){
     if(body.query.startsWith('query Status'))return Response.json({data:{post:{id:'post-1',status:'sent',externalLink:'https://youtube.com/shorts/test'}}});
     mutations++;
+    sentInputs.push(body.variables.input);
     assert(body.variables.input.channelId==='server-selected-channel');
     assert(body.variables.input.needsApproval===false);
     assert(body.variables.input.metadata.youtube.title==='Test');
@@ -30,7 +31,7 @@ function harness(options:{denyAuth?:boolean;denyRole?:boolean;missingFile?:boole
    throw new Error('Unexpected URL '+path);
   }});
  const send=(body:any=input,headers:any={Authorization:'Bearer user-token'})=>handler(new Request('https://test/publish',{method:'POST',headers,body:JSON.stringify(body)}));
- return {send,handler,count:()=>mutations};
+ return {send,handler,count:()=>mutations,sentInputs};
 }
 Deno.test('requires authenticated and allowlisted publishers before Buffer calls',async()=>{
  for(const opts of [{denyAuth:true},{denyRole:true}]){const h=harness(opts);assert((await h.send()).status===(opts.denyAuth?401:403));assert(h.count()===0);}
@@ -57,4 +58,24 @@ Deno.test('timeouts and persistence failures never automatically retry a potenti
 Deno.test('explicit rejection is recorded without exposing upstream details or keys',async()=>{
  const h=harness({reject:true});const r=await h.send();const body=await r.text();assert(body.includes('rejected')&&!body.includes('secret'));
  await h.send();assert(h.count()===1);
+});
+Deno.test('custom time is forwarded exactly, queue remains backward compatible',async()=>{
+ const dueAt=new Date(Date.now()+3600000).toISOString();
+ const h=harness();await h.send({...input,scheduleMode:'custom',dueAt});
+ assert(h.sentInputs.length===1&&h.sentInputs[0].mode==='customScheduled'&&h.sentInputs[0].dueAt===dueAt);
+ await h.send({...input,scheduleMode:'custom',dueAt:new Date(Date.now()+7200000).toISOString()});
+ assert(h.count()===1); // A resubmission does not create or reschedule another post.
+ const old=harness();await old.send();assert(old.sentInputs[0].mode==='addToQueue'&&!('dueAt' in old.sentInputs[0]));
+ const capabilities=await(await old.send({action:'channels'})).json();assert(capabilities.features.customSchedule===true);
+});
+Deno.test('invalid schedules fail before creating a delivery or calling Buffer, including image posts',async()=>{
+ const now=Date.now();
+ for(const fields of [{scheduleMode:'other'},{scheduleMode:'custom'},
+  {scheduleMode:'custom',dueAt:'bad'},{scheduleMode:'custom',dueAt:new Date(now-1).toISOString()},
+  {scheduleMode:'custom',dueAt:new Date(now+60000).toISOString()},
+  {scheduleMode:'queue',dueAt:new Date(now+3600000).toISOString()}]){
+  const h=harness();assert((await h.send({...input,...fields})).status===400);assert(h.count()===0);
+  assert(validate({...input,...fields,platform:'facebook',meta:{...input.meta,name:'image.png',kind:'image'}})==='INVALID_SCHEDULE');
+ }
+ assert(validateSchedule({scheduleMode:'custom',dueAt:new Date(now+300000).toISOString()},now)===null);
 });

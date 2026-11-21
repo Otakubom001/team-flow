@@ -10,20 +10,20 @@
    $('pub-auth-message').textContent=$('pub-remember').checked?'จะจำการเข้าสู่ระบบบนเครื่องนี้แล้ว':'เปลี่ยนเป็นจำเฉพาะแท็บนี้แล้ว';
   }catch{$('pub-remember').checked=authStorage.remembered();$('pub-auth-message').textContent='บันทึกการตั้งค่าไม่ได้ กรุณาตรวจพื้นที่จัดเก็บของเบราว์เซอร์';}
  };
- let channels=[],user=null;
+ let channels=[],user=null,customSchedule=false;
  const errors={LOGIN_REQUIRED:'กรุณาเข้าสู่ระบบผู้โพสต์อีกครั้ง',PUBLISHER_REQUIRED:'บัญชีนี้ยังไม่ได้รับสิทธิ์โพสต์',MANUAL_REQUIRED:'ไฟล์นี้ต้องลงเองในช่องทางที่เลือก',INVALID_MEDIA:'ไฟล์ไม่ถูกต้องหรือเกิน 50 MB',MEDIA_MISMATCH:'ข้อมูลไฟล์บนเซิร์ฟเวอร์ไม่ตรง กรุณาตรวจไฟล์',MEDIA_NOT_FOUND:'ยังไม่พบไฟล์ที่อัปโหลด',METADATA_REQUIRED:'กรุณาระบุข้อมูลเนื้อหาวิดีโอ',SERVER_CONFIG_MISSING:'ระบบหลังบ้านยังตั้งค่าไม่ครบ',SERVICE_UNAVAILABLE:'ติดต่อระบบไม่ได้ กรุณาตรวจสถานะก่อนส่งซ้ำ'};
  async function call(body){
   const {data:{session}}=await client.auth.getSession();
   if(!session)throw new Error(errors.LOGIN_REQUIRED);
   let response;try{response=await fetch(SUPABASE_URL+'/functions/v1/smooth-responder',{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(60000)});}catch{throw new Error('ติดต่อระบบส่งโพสต์ไม่ได้ กรุณาตรวจสถานะก่อนส่งซ้ำ');}
   const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(errors[result.code]||'ระบบยังไม่พร้อมใช้งาน ('+(result.code||response.status)+')');
+  if(!response.ok){const error=new Error(result.code==='INVALID_SCHEDULE'?'เวลาที่เลือกใกล้เกินไปหรือไม่ถูกต้อง กรุณาตั้งล่วงหน้าอย่างน้อย 5 นาที':errors[result.code]||'ระบบยังไม่พร้อมใช้งาน ('+(result.code||response.status)+')');error.code=result.code;throw error;}
   return result;
  }
  async function refresh(){
-  channels=[];user=null;
+  channels=[];user=null;customSchedule=false;
   const {data:{session}}=await client.auth.getSession();
-  if(session){try{const result=await call({action:'channels'});channels=result.channels;user=session.user;$('pub-auth-message').textContent='พร้อมส่ง: '+channels.map(c=>c.name).join(' · ');}catch(e){$('pub-auth-message').textContent=e.message;}}
+  if(session){try{const result=await call({action:'channels'});channels=result.channels;customSchedule=result.features?.customSchedule===true;user=session.user;$('pub-auth-message').textContent='พร้อมส่ง: '+channels.map(c=>c.name).join(' · ');}catch(e){$('pub-auth-message').textContent=e.message;}}
   else $('pub-auth-message').textContent='เข้าสู่ระบบด้วยบัญชีผู้โพสต์ที่ผู้ดูแลเพิ่มใน Supabase';
   $('pub-connections').textContent=user?'บัญชีผู้โพสต์ · '+channels.length+' ช่องทาง':'เข้าสู่ระบบผู้โพสต์';
   $('pub-auth-form').hidden=!!user;$('pub-signout').hidden=!session;
@@ -38,6 +38,7 @@
  $('pub-signout').onclick=async()=>{await client.auth.signOut({scope:'local'});await refresh();};
  window.PublishBuffer={
   ready:()=>!!user,
+  canSchedule:()=>customSchedule,
   channel:p=>channels.find(c=>c.platform===p),
   async upload(item){
    if(!user)throw new Error(errors.LOGIN_REQUIRED);
@@ -56,7 +57,13 @@
    if(item.publisherId && item.publisherId!==user?.id)throw new Error('กรุณาเข้าสู่ระบบบัญชีผู้โพสต์เดิม');
    return call({action:'status',id:item.id,platform});
   },
-  send:(item,platform,options)=>call({action:'send',id:item.id,platform,title:item.title,caption:item.caption,meta:item.meta,...options}),
+  async send(item,platform,options){
+   if(options.scheduleMode==='custom'){
+    const capability=await call({action:'channels'});
+    if(capability.features?.customSchedule!==true){const error=new Error('ต้องอัปเดตฟังก์ชัน Supabase ก่อนใช้การกำหนดเวลา');error.code='SCHEDULE_UNAVAILABLE';throw error;}
+   }
+   return call({action:'send',id:item.id,platform,title:item.title,caption:item.caption,meta:item.meta,...options});
+  },
   refresh
  };
  refresh();

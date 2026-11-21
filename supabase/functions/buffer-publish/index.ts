@@ -1,7 +1,15 @@
 // Self-contained for Dashboard deployment. Never put these secrets in browser code.
 type Deps = { env: (name: string) => string | undefined; fetch: typeof fetch };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function validateSchedule(input: any, now = Date.now()): string | null {
+ if (input.scheduleMode === undefined || input.scheduleMode === 'queue') return input.dueAt == null ? null : 'INVALID_SCHEDULE';
+ if (input.scheduleMode !== 'custom' || typeof input.dueAt !== 'string') return 'INVALID_SCHEDULE';
+ const timestamp = Date.parse(input.dueAt);
+ if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString() !== input.dueAt || timestamp < now + 5*60000) return 'INVALID_SCHEDULE';
+ return null;
+}
 export function validate(input: any): string | null {
+  const scheduleError = validateSchedule(input); if (scheduleError) return scheduleError;
   const m = input?.meta, p = input?.platform;
   if (!UUID.test(input?.id || '') || !['facebook','tiktok','youtube'].includes(p)) return 'INVALID_REQUEST';
   if (typeof input.title !== 'string' || !input.title.trim() || input.title.length > 100 || typeof input.caption !== 'string' || input.caption.length > 5000) return 'INVALID_TEXT';
@@ -44,7 +52,7 @@ export function createHandler(deps: Deps) {
    if (!(await rows(`publishers?user_id=eq.${user.id}&select=user_id`)).length) return reply({code:'PUBLISHER_REQUIRED'},403);
    const raw = await request.text(); if (raw.length > 20000) return reply({code:'INVALID_REQUEST'},400);
    let input; try {input = JSON.parse(raw);} catch {return reply({code:'INVALID_REQUEST'},400);}
-   if (input.action === 'channels') return reply({ok:true,channels:await rows('publishing_channels?select=platform,name'),maxBytes:52428800});
+   if (input.action === 'channels') return reply({ok:true,channels:await rows('publishing_channels?select=platform,name'),maxBytes:52428800,features:{customSchedule:true}});
    if (input.action !== 'send' && input.action !== 'status') return reply({code:'INVALID_REQUEST'},400);
    if (!UUID.test(input.id || '') || !['facebook','tiktok','youtube'].includes(input.platform)) return reply({code:'INVALID_REQUEST'},400);
    const filter = `user_id=eq.${user.id}&item_id=eq.${input.id}&platform=eq.${input.platform}`;
@@ -55,10 +63,10 @@ export function createHandler(deps: Deps) {
     if (input.action === 'status' && entry.post_id) {
      const response = await deps.fetch('https://api.buffer.com',{method:'POST',redirect:'error',signal:AbortSignal.timeout(15000),
       headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},
-      body:JSON.stringify({query:'query Status($input: PostInput!) { post(input: $input) { id status externalLink } }',variables:{input:{id:entry.post_id}}})});
+      body:JSON.stringify({query:'query Status($input: PostInput!) { post(input: $input) { id status dueAt externalLink } }',variables:{input:{id:entry.post_id}}})});
      const result = await response.json();
      if (!response.ok || result.errors || !result.data?.post) return reply({code:'STATUS_UNAVAILABLE'},502);
-     return reply({ok:true,...entry,providerStatus:result.data.post.status,url:result.data.post.externalLink});
+     return reply({ok:true,...entry,providerStatus:result.data.post.status,url:result.data.post.externalLink,dueAt:result.data.post.dueAt});
     }
     return reply({ok:true,...entry});
    }
@@ -74,6 +82,7 @@ export function createHandler(deps: Deps) {
    if (!file || Number(file.metadata?.size) !== input.meta.size || file.metadata?.mimetype !== expectedMime[ext]) return reply({code:'MEDIA_MISMATCH'},400);
    const channels = await rows(`publishing_channels?platform=eq.${input.platform}&select=channel_id`);
    if (!channels.length) return reply({code:'CHANNEL_MISSING'},503);
+   const scheduleError = validateSchedule(input); if (scheduleError) return reply({code:scheduleError},400);
    const claim = await api('/rest/v1/publishing_deliveries','POST',{user_id:user.id,item_id:input.id,platform:input.platform,state:'sending'});
    if (claim.status === 409) return reply({ok:true,...(await rows(`publishing_deliveries?${filter}&select=state,post_id`))[0]});
    if (!claim.ok) return reply({code:'DATABASE_UNAVAILABLE'},503);
@@ -81,7 +90,8 @@ export function createHandler(deps: Deps) {
     : input.platform === 'youtube' ? {youtube:{title:input.title,categoryId:'24',privacy:'public',madeForKids:input.madeForKids,isAiGenerated:input.aiGenerated}}
     : {tiktok:{isAiGenerated:input.aiGenerated}};
    const postInput = {channelId:channels[0].channel_id,text:input.caption || input.title,metadata,
-    schedulingType:'automatic',mode:'addToQueue',needsApproval:false,
+    schedulingType:'automatic',mode:input.scheduleMode === 'custom'?'customScheduled':'addToQueue',needsApproval:false,
+    ...(input.scheduleMode === 'custom'?{dueAt:input.dueAt}:{}),
     assets:[{[input.meta.kind]:{url:base+'/storage/v1/object/public/publishing-media/'+path}}]};
    let state = 'unknown', post_id: string | null = null;
    try {

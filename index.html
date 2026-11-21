@@ -758,12 +758,17 @@ body {
         <form method="dialog"><button class="btn btn-sm pub-close" aria-label="ปิด">✕</button></form>
         <h2 id="pub-send-title">ส่งเข้าคิว Buffer</h2>
         <p id="pub-send-targets"></p>
-        <p>Buffer จะเผยแพร่ตามเวลาว่างในคิวของแต่ละช่อง ไม่ใช่โพสต์ทันที ไฟล์ที่อัปโหลดจะเข้าถึงได้ผ่านลิงก์สาธารณะเพื่อให้ Buffer ดาวน์โหลด และจะยังเก็บไว้แม้ลบรายการในเครื่อง</p>
+        <p>เลือกเข้าคิวเดิมหรือกำหนดวันเวลาเองสำหรับทุกช่องทางในรายการนี้ ไฟล์ที่อัปโหลดจะเข้าถึงได้ผ่านลิงก์สาธารณะเพื่อให้ Buffer ดาวน์โหลด และจะยังเก็บไว้แม้ลบรายการในเครื่อง</p>
         <form id="pub-send-form">
+            <label class="pub-field">เวลาเผยแพร่<select id="pub-schedule-mode"><option value="queue">ใช้เวลาว่างถัดไปในคิว Buffer</option value="custom" id="pub-custom-option">กำหนดวันและเวลาเอง</option></select></label>
+            <p id="pub-schedule-availability" class="pub-help"></p>
+            <label class="pub-field" id="pub-schedule-field" hidden>วันและเวลาโพสต์ (เวลาไทย UTC+7)<input type="datetime-local" id="pub-schedule-at" step="60"></label>
+            <p id="pub-schedule-preview" class="pub-help" aria-live="polite"></p>
+            <p id="pub-schedule-error" class="pub-error" role="alert"></p>
             <label class="pub-field">คลิปนี้สร้างหรือดัดแปลงด้วย AI หรือไม่<select id="pub-ai" required><option value="">เลือกคำตอบ</option><option value="yes">ใช่</option><option value="no">ไม่ใช่</option></select></label>
             <label class="pub-field">YouTube: เนื้อหานี้สร้างมาเพื่อเด็กโดยเฉพาะหรือไม่<select id="pub-kids" required><option value="">เลือกคำตอบ</option><option value="no">ไม่ใช่</option><option value="yes">ใช่</option></select></label>
             <label class="pub-confirm"><input type="checkbox" required> ยืนยันไฟล์และช่องทาง พร้อมให้เผยแพร่ตามคิว</label>
-            <button class="btn btn-primary pub-full" type="submit">อัปโหลดและส่งเข้าคิว</button>
+            <button class="btn btn-primary pub-full" id="pub-send-submit" type="submit">อัปโหลดและส่งเข้าคิว</button>
         </form>
     </dialog>
 
@@ -2167,7 +2172,8 @@ initCalendar();
     </script>
     <script src="publish-rules.js?v=1"></script>
     <script src="publisher-storage.js?v=1"></script>
-    <script src="buffer-client.js?v=2"></script>
-    <script src="publish.js?v=2"></script>
+    <script src="buffer-client.js?v=3"></script>
+    <script src="publish-schedule.js?v=1"></script>
+    <script src="publish.js?v=3"></script>
 </body>
 </html>

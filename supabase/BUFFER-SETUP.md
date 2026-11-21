@@ -1,3 +1,26 @@
+## Custom scheduling update
+
+Replace ALL code in the deployed `smooth-responder` function with the current
+`functions/buffer-publish/index.ts`, keep filename `index.ts`, and click Deploy
+updates. No SQL migration, new function, new key or permission changes are needed.
+Keep the existing JWT verification setting. Refresh the website after deployment.
+
+The frontend enables custom scheduling only when the authenticated channels
+response advertises `features.customSchedule: true`, and checks this again before
+sending. An older backend cannot silently turn a custom-time request into a normal
+queue entry. Queue submissions still work during the update.
+
+Choose a Thai date/time at least five minutes ahead, allowing time to upload.
+The browser explicitly converts UTC+7 to an ISO UTC timestamp regardless of the
+computer timezone. The backend independently validates it before claiming a send,
+then uses Buffer `mode: customScheduled` and `dueAt`. All selected channels use the
+same requested time. Initial display says requested time; status refresh shows
+Buffer's actual `dueAt`. Existing queued posts are not rescheduled by this feature.
+
+Tests: `node tests/publish-schedule.cjs` and `deno test tests/buffer-publish.test.ts`.
+Live custom scheduling still needs deployment and a real publishing test.
+Reference: https://developers.buffer.com/examples/create-scheduled-post.html
+
 > Deployment update (2026-11-21): the user created the publishing function as
 > `smooth-responder`. The website now targets that name. Keep it and update it
 > in place using `functions/buffer-publish/index.ts`; do not create another copy.
