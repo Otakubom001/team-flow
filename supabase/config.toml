@@ -1,0 +1,12 @@
+# Each handler verifies credentials itself. The publishing endpoint validates
+# user sessions with Auth, then checks the publisher allowlist on every call.
+[functions.buffer-publish]
+verify_jwt = false
+
+[functions.buffer-check]
+verify_jwt = false
+
+# Dashboard deployed name; reuse the same audited publishing handler.
+[functions.smooth-responder]
+verify_jwt = false
+entrypoint = "./functions/buffer-publish/index.ts"

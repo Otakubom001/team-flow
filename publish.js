@@ -1,6 +1,8 @@
 (function() {
     'use strict';
-    const R=window.PublishRules, $=id=>document.getElementById(id);
+    const R=window.PublishRules, B=window.PublishBuffer, $=id=>document.getElementById(id);
+    let sendSelection=null;
+    const deliveryLabels={sending:'กำลังส่ง / รอตรวจสอบผลใน Buffer',queued:'เข้าคิว Buffer แล้ว · ยังไม่ยืนยันว่าเผยแพร่',unknown:'ยังยืนยันผลไม่ได้ · ตรวจใน Buffer ก่อนลงเอง',rejected:'Buffer ไม่รับรายการ · ตรวจข้อกำหนดใน Buffer',sent:'เผยแพร่แล้ว · ยืนยันจาก Buffer',scheduled:'รอเผยแพร่ตามคิว Buffer',error:'เผยแพร่ไม่สำเร็จ · ตรวจใน Buffer',draft:'เป็นร่างใน Buffer',needs_approval:'รออนุมัติใน Buffer'};
     let current=null, previewUrl='', inspectVersion=0, busy=false, records=[], manual=null, dbPromise;
     const selected=new Set(['facebook','tiktok','youtube']);
     const text=(tag,value,cls)=>{const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;};
@@ -97,7 +99,7 @@
             wrap.append(box);
         }
         $('pub-save').disabled=busy||!current||!selected.size;
-        $('pub-check-summary').textContent=!current?'เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง':!selected.size?'กรุณาเลือกอย่างน้อย 1 ช่องทาง':manualCount?'ต้องลงเอง '+manualCount+' จาก '+selected.size+' ช่องทาง • ช่องทางอื่นยังรอเชื่อมบัญชี':'ผ่านเกณฑ์เบื้องต้น '+selected.size+' ช่องทาง • ยังไม่มีบัญชีเชื่อมต่อ จึงยังไม่ส่งโพสต์';
+        $('pub-check-summary').textContent=!current?'เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง':!selected.size?'กรุณาเลือกอย่างน้อย 1 ช่องทาง':manualCount?'ต้องลงเอง '+manualCount+' จาก '+selected.size+' ช่องทาง • ช่องทางอื่นส่งได้หลังเข้าสู่ระบบผู้โพสต์':'ผ่านเกณฑ์เบื้องต้น '+selected.size+' ช่องทาง • บันทึกรายการแล้วส่งเข้าคิว Buffer ได้หลังเข้าสู่ระบบ';
     }
     $('pub-drop').onclick=()=>$('pub-file').click();
     $('pub-file').onchange=()=>choose($('pub-file').files[0]);
@@ -120,37 +122,92 @@
             message('บันทึก “'+title+'” ในเบราว์เซอร์นี้แล้ว ยังไม่ได้เผยแพร่');
         }catch{
             $('pub-file-error').textContent='บันทึกไฟล์ไม่ได้ พื้นที่เบราว์เซอร์อาจไม่พอหรือถูกปิดใช้งาน ไฟล์ยังอยู่ในฟอร์ม กรุณาเก็บไฟล์ต้นฉบับไว้';
-        }finally{busy=false;$('pub-form').inert=false;$('pub-save').innerHTML='<i class="fas fa-save"></i> บันทึกรายการเตรียมโพสต์';renderChecks();}
+        }finally{busy=false;$('pub-form').inert=false;$('pub-save').innerHTML='<i class="fas fa-save"></i> บันทึกรายการเตรียมโพสต์';renderChecks();renderLibrary();}
     };
     function renderLibrary(){
         const list=$('pub-library');list.replaceChildren();$('pub-count').textContent=records.length;
         const filter=$('pub-filter').value;
-        const visible=records.filter(item=>filter==='all'||(Object.values(item.targets).every(t=>t.status==='posted')?filter==='posted':filter==='pending'));
+        const visible=records.filter(item=>filter==='all'||(Object.values(item.targets).every(t=>t.status==='posted'||t.status==='sent')?filter==='posted':filter==='pending'));
         if(!visible.length){const empty=text('div',records.length?'ไม่มีรายการในหมวดนี้':'ยังไม่มีรายการ — เลือกไฟล์ด้านบนเพื่อเตรียมโพสต์แรก','pub-empty');list.append(empty);return;}
         for(const item of visible){
             const card=document.createElement('article');card.className='pub-record';
             const top=document.createElement('div');top.className='pub-record-top';
             const icon=document.createElement('i');icon.className=item.meta.kind==='video'?'fas fa-film':'fas fa-image';
             const info=document.createElement('div');info.append(text('h3',item.title),text('small',item.meta.name+' · '+(item.meta.kind==='video'?R.duration(item.meta.duration)+' นาที · ':'')+new Date(item.createdAt).toLocaleDateString('th-TH')));
-            const remove=text('button','ลบ','btn btn-sm');remove.type='button';remove.setAttribute('aria-label','ลบรายการ '+item.title);
+            const remove=text('button','ลบ','btn btn-sm');remove.type='button';remove.disabled=busy;remove.setAttribute('aria-label','ลบรายการ '+item.title);
             remove.onclick=async()=>{
                 if(!confirm('ลบรายการและสำเนาไฟล์ในเบราว์เซอร์นี้? โพสต์ที่ลงบนแพลตฟอร์มแล้วจะไม่ถูกลบ'))return;
                 remove.disabled=true;
                 try{await store('delete',item.id);records=records.filter(x=>x.id!==item.id);renderLibrary();message('ลบรายการในเครื่องแล้ว');}catch{message('ลบรายการไม่สำเร็จ กรุณาลองใหม่');remove.disabled=false;}
             };
             top.append(icon,info,remove);card.append(top);
+            const eligible=Object.keys(item.targets).filter(id=>['connection','manual'].includes(item.targets[id].status)&&R.check(item.meta,id).kind==='preliminary');
+            if(eligible.length){
+                const send=text('button','ส่งเข้า Buffer ('+eligible.length+' ช่องทาง)','btn btn-primary');send.type='button';send.disabled=busy;
+                send.onclick=()=>{
+                    if(!B?.ready()){$('pub-connection-dialog').showModal();return;}
+                    if(item.meta.size>52428800){message('ไฟล์เกิน 50 MB สำหรับอัปโหลด กรุณาลดขนาดไฟล์หรือลงเอง');return;}
+                    if(eligible.some(id=>!B.channel(id))){message('บางช่องทางยังไม่ได้ตั้งค่า กรุณาตรวจบัญชีผู้โพสต์');return;}
+                    sendSelection={item,platforms:eligible};$('pub-send-form').reset();
+                    const video=item.meta.kind==='video';
+                    $('pub-ai').closest('label').hidden=!video;
+                    $('pub-ai').required=video;
+                    $('pub-kids').closest('label').hidden=!eligible.includes('youtube');
+                    $('pub-kids').required=eligible.includes('youtube');
+                    $('pub-send-targets').textContent=item.title+' → '+eligible.map(id=>R.platforms[id].name+': '+B.channel(id).name).join(' · ');
+                    $('pub-send-dialog').showModal();
+                };card.append(send);
+            }
             for(const [id,target]of Object.entries(item.targets)){
                 const row=document.createElement('div');row.className='pub-record-target';const detail=document.createElement('div');
                 const checked=R.check(item.meta,id);
                 detail.append(text('strong',R.platforms[id].name));
-                detail.append(text('p',target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':target.status==='manual'?'รอลงเอง · '+checked.reasons[0]:'รอเชื่อมบัญชี · สามารถลงเองก่อนได้',target.status==='posted'?'pub-posted':''));
-                if(target.url){const a=text('a','เปิดโพสต์ ↗');a.href=target.url;a.target='_blank';a.rel='noopener noreferrer';detail.append(a);}
+                detail.append(text('p',target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':deliveryLabels[target.status]|| (target.status==='manual'?'รอลงเอง · '+checked.reasons[0]:'พร้อมเตรียมส่ง · หรือลงเองได้'),target.status==='posted'?'pub-posted':''));
+                if(target.url && R.validPostUrl(target.url,id)){const a=text('a','เปิดโพสต์ ↗');a.href=target.url;a.target='_blank';a.rel='noopener noreferrer';detail.append(a);}
                 const action=text('button',target.status==='posted'?'ดูรายละเอียด':'ลงเอง','btn btn-sm');action.type='button';action.onclick=()=>openManual(item,id);
+                action.disabled=busy;
+                if(deliveryLabels[target.status]){
+                    action.textContent='ตรวจสถานะ';action.onclick=async()=>{
+                        action.disabled=true;
+                        try{const result=await B.status(item,id);
+                            if(result.state!=='not_sent'){
+                                target.status=result.providerStatus||result.state;
+                                target.postId=result.post_id||target.postId;
+                                if(result.url&&R.validPostUrl(result.url,id))target.url=result.url;
+                                await store('put',item);renderLibrary();
+                            }else{message('ไม่พบการส่งในบัญชีนี้ กรุณาตรวจบัญชีผู้โพสต์');}
+                        }catch(e){message(e.message);}finally{action.disabled=false;}
+                    };
+                    const link=text('a','เปิด Buffer');link.href='https://publish.buffer.com/';link.target='_blank';link.rel='noopener noreferrer';detail.append(link);
+                }
                 row.append(detail,action);card.append(row);
             }
             list.append(card);
         }
     }
+    $('pub-send-form').onsubmit=async e=>{
+        e.preventDefault();if(busy||!sendSelection)return;
+        const {item,platforms}=sendSelection;
+        const options={aiGenerated:$('pub-ai').value==='yes',madeForKids:$('pub-kids').value==='yes'};
+        busy=true;$('pub-send-dialog').close();$('pub-form').inert=true;renderChecks();renderLibrary();
+        try{
+            message('กำลังอัปโหลดไฟล์…');
+            // Bind the record to the sending account before network writes.
+            await B.upload(item);await store('put',item);
+            for(const id of platforms){
+                message('กำลังส่ง '+R.platforms[id].name+'…');
+                item.targets[id]={...item.targets[id],status:'sending'};
+                await store('put',item);renderLibrary();
+                try{
+                    const result=await B.send(item,id,options);
+                    item.targets[id]={...item.targets[id],status:result.state,postId:result.post_id};
+                }catch(e){item.targets[id].status='unknown';message(e.message);}
+                await store('put',item);renderLibrary();
+            }
+            message('ส่งคำขอครบแล้ว ดูผลแยกแต่ละช่องด้านล่าง • เข้าคิวยังไม่เท่ากับเผยแพร่แล้ว');
+        }catch(e){message(e.message);}finally{busy=false;$('pub-form').inert=false;renderChecks();renderLibrary();}
+    };
+    window.addEventListener('publisherchange',()=>{renderChecks();renderLibrary();});
     function openManual(item,platform){
         manual={item,platform};$('pub-manual-title').textContent='ลงเอง · '+R.platforms[platform].name;
         $('pub-manual-name').textContent=item.title;
