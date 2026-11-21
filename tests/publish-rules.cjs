@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {check,validPostUrl}=require('../publish-rules.js');
+const {check,checkUpload,validPostUrl}=require('../publish-rules.js');
 const video={name:'ep.mp4',size:1e6,kind:'video',width:1080,height:1920,duration:60};
 const result=(duration,platform,extra={})=>check({...video,duration,...extra},platform).kind;
 assert.equal(result(90,'facebook'),'preliminary');
@@ -30,4 +30,13 @@ assert.equal(validPostUrl('https://youtube.com.evil.example/a','youtube'),false)
 assert.equal(validPostUrl('javascript:alert(1)','facebook'),false);
 assert.equal(validPostUrl('https://tiktok.com/@test/video/123','youtube'),false);
 assert.equal(validPostUrl('','facebook'),true);
-console.log('PASS: duration boundaries, 2-minute episodes, 6-minute compilation, file checks, images and post URLs');
+const large={...video,size:171700000,duration:139};
+for(const platform of ['facebook','tiktok','youtube']){
+    assert.equal(checkUpload(large,platform).kind,'manual');
+    assert.ok(checkUpload(large,platform).reasons[0].includes('50 MB'));
+}
+assert.ok(checkUpload(large,'facebook').reasons.some(reason=>reason.includes('90')));
+assert.equal(checkUpload({...video,size:52428800},'youtube').kind,'preliminary');
+assert.equal(checkUpload({...video,size:52428801},'youtube').kind,'manual');
+assert.equal(checkUpload({...picture,size:52428801},'facebook').kind,'manual');
+console.log('PASS: duration boundaries, file checks, images, post URLs and website upload cap');

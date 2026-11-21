@@ -52,7 +52,14 @@
             return url.protocol==='https:' && !url.username && !url.password && domains[platform].some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
         } catch {return false;}
     }
-    const api={platforms,check,duration,validPostUrl};
+    function checkUpload(meta,platform){
+        const result=check(meta,platform);
+        if(meta?.size>52428800){
+            return {kind:'manual',reasons:['ไฟล์เกิน 50 MB ที่เว็บอัปโหลดได้ กรุณาลดขนาดไฟล์หรือลงเอง',...(result.kind==='manual'?result.reasons:[])]};
+        }
+        return result;
+    }
+    const api={platforms,check,checkUpload,duration,validPostUrl};
     if(typeof module!=='undefined'&&module.exports)module.exports=api;
     else root.PublishRules=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

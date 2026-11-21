@@ -3,6 +3,20 @@
     const R=window.PublishRules, B=window.PublishBuffer, $=id=>document.getElementById(id);
     let sendSelection=null;
     const S=window.PublishSchedule;
+    function updateComposeSchedule(){
+        const custom=$('pub-compose-mode').value==='custom';
+        $('pub-compose-at').disabled=!custom;$('pub-compose-at').required=custom;
+        $('pub-compose-time-error').textContent='';
+        if(!custom){$('pub-compose-time-summary').textContent='ใช้เวลาว่างถัดไปของแต่ละช่องใน Buffer';return;}
+        try{$('pub-compose-time-summary').textContent='เวลาที่เลือก: '+S.format(S.parse($('pub-compose-at').value));}
+        catch(error){$('pub-compose-time-summary').textContent='';$('pub-compose-time-error').textContent=error.message;}
+    }
+    $('pub-compose-mode').onchange=()=>{
+        if(!$('pub-compose-at').value)$('pub-compose-at').value=S.localValue(Date.now()+30*60000);
+        $('pub-compose-at').min=S.localValue(Date.now()+6*60000);updateComposeSchedule();
+    };
+    $('pub-compose-at').oninput=updateComposeSchedule;
+    updateComposeSchedule();
     function updateSchedule(){
         const custom=$('pub-schedule-mode').value==='custom';
         $('pub-schedule-field').hidden=!custom;$('pub-schedule-at').required=custom;
@@ -43,7 +57,7 @@
         inspectVersion++;
         if(previewUrl)URL.revokeObjectURL(previewUrl);
         previewUrl='';current=null;
-        $('pub-form').reset();$('pub-preview').replaceChildren();$('pub-preview').hidden=true;
+        $('pub-form').reset();updateComposeSchedule();$('pub-preview').replaceChildren();$('pub-preview').hidden=true;
         $('pub-file').value='';$('pub-file-info').textContent='';$('pub-file-error').textContent='';
         $('pub-drop').querySelector('strong').textContent='เลือกไฟล์ หรือลากมาวางที่นี่';
         selected.clear();['facebook','tiktok','youtube'].forEach(p=>selected.add(p));
@@ -97,7 +111,7 @@
         const wrap=$('pub-platforms');wrap.replaceChildren();
         let manualCount=0;
         for(const [id,p]of Object.entries(R.platforms)){
-            const result=R.check(current?.meta,id),box=document.createElement('div');
+            const result=R.checkUpload(current?.meta,id),box=document.createElement('div');
             box.className='pub-platform'+(selected.has(id)?'':' off');box.dataset.result=selected.has(id)?result.kind:'';
             const label=document.createElement('label'),checkbox=document.createElement('input');
             checkbox.type='checkbox';checkbox.checked=selected.has(id);checkbox.disabled=busy;
@@ -106,12 +120,13 @@
             label.append(checkbox,icon,text('strong',p.name),text('span',p.label));box.append(label);
             if(selected.has(id)){
                 if(result.kind==='manual')manualCount++;
-                box.append(text('p',(result.kind==='manual'?'⚠ ':result.kind==='preliminary'?'✓ ':'')+result.reasons.join(' • ')));
+                box.append(text('p',(result.kind==='manual'?'⛔ ส่งผ่านเว็บไม่ได้: ':result.kind==='preliminary'?'✓ ':'')+result.reasons.join(' • ')));
             }
             wrap.append(box);
         }
+        $('pub-check-summary').classList.toggle('pub-blocked',manualCount>0);
         $('pub-save').disabled=busy||!current||!selected.size;
-        $('pub-check-summary').textContent=!current?'เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง':!selected.size?'กรุณาเลือกอย่างน้อย 1 ช่องทาง':manualCount?'ต้องลงเอง '+manualCount+' จาก '+selected.size+' ช่องทาง • ช่องทางอื่นส่งได้หลังเข้าสู่ระบบผู้โพสต์':'ผ่านเกณฑ์เบื้องต้น '+selected.size+' ช่องทาง • บันทึกรายการแล้วส่งเข้าคิว Buffer ได้หลังเข้าสู่ระบบ';
+        $('pub-check-summary').textContent=!current?'เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง':!selected.size?'กรุณาเลือกอย่างน้อย 1 ช่องทาง':manualCount?'ต้องลงเอง '+manualCount+' จาก '+selected.size+' ช่องทาง'+(manualCount<selected.size?' • ช่องทางที่ผ่านยังส่งได้':' • กรุณาแก้ไฟล์หรือลงเอง'):'ผ่านเกณฑ์เบื้องต้น '+selected.size+' ช่องทาง • บันทึกรายการแล้วส่งเข้าคิว Buffer ได้หลังเข้าสู่ระบบ';
     }
     $('pub-drop').onclick=()=>$('pub-file').click();
     $('pub-file').onchange=()=>choose($('pub-file').files[0]);
@@ -126,9 +141,14 @@
     $('pub-form').onsubmit=async e=>{
         e.preventDefault();if(busy||!current||!selected.size)return;
         const title=$('pub-title').value.trim();if(!title){$('pub-title').focus();return;}
+        const scheduleMode=$('pub-compose-mode').value;
+        let draftDueAt=null;
+        if(scheduleMode==='custom'){
+            try{draftDueAt=S.parse($('pub-compose-at').value);}catch(error){$('pub-compose-time-error').textContent=error.message;$('pub-compose-at').focus();return;}
+        }
         busy=true;$('pub-form').inert=true;renderChecks();$('pub-save').textContent='กำลังบันทึกไฟล์ในเครื่อง…';
-        const item={id:crypto.randomUUID(),title,caption:$('pub-caption').value,meta:current.meta,file:current.file,createdAt:new Date().toISOString(),targets:{}};
-        for(const id of selected)item.targets[id]={status:R.check(item.meta,id).kind==='manual'?'manual':'connection',url:'',postedAt:null};
+        const item={id:crypto.randomUUID(),title,caption:$('pub-caption').value,meta:current.meta,file:current.file,createdAt:new Date().toISOString(),scheduleMode,draftDueAt,targets:{}};
+        for(const id of selected)item.targets[id]={status:R.checkUpload(item.meta,id).kind==='manual'?'manual':'connection',url:'',postedAt:null};
         try{
             await store('put',item);records.unshift(item);reset();renderLibrary();
             message('บันทึก “'+title+'” ในเบราว์เซอร์นี้แล้ว ยังไม่ได้เผยแพร่');
@@ -152,8 +172,11 @@
                 remove.disabled=true;
                 try{await store('delete',item.id);records=records.filter(x=>x.id!==item.id);renderLibrary();message('ลบรายการในเครื่องแล้ว');}catch{message('ลบรายการไม่สำเร็จ กรุณาลองใหม่');remove.disabled=false;}
             };
+            const targets=Object.values(item.targets),done=targets.filter(t=>['sent','posted'].includes(t.status)).length;
+            info.append(text('span',done===targets.length?'✓ เผยแพร่ครบทุกช่องทาง':done?'✓ เผยแพร่แล้ว '+done+'/'+targets.length+' ช่องทาง':'ยังเผยแพร่ไม่ครบ',done===targets.length?'pub-status pub-status-success':'pub-status pub-status-pending'));
+            if(item.draftDueAt&&Number.isFinite(Date.parse(item.draftDueAt)))info.append(text('p','เวลาที่เตรียมไว้: '+S.format(item.draftDueAt),'pub-help'));
             top.append(icon,info,remove);card.append(top);
-            const eligible=Object.keys(item.targets).filter(id=>['connection','manual'].includes(item.targets[id].status)&&R.check(item.meta,id).kind==='preliminary');
+            const eligible=Object.keys(item.targets).filter(id=>['connection','manual'].includes(item.targets[id].status)&&R.checkUpload(item.meta,id).kind==='preliminary');
             if(eligible.length){
                 const send=text('button','ส่งเข้า Buffer ('+eligible.length+' ช่องทาง)','btn btn-primary');send.type='button';send.disabled=busy;
                 send.onclick=()=>{
@@ -164,7 +187,8 @@
                     $('pub-custom-option').disabled=!B.canSchedule();
                     $('pub-schedule-availability').textContent=B.canSchedule()?'ตั้งล่วงหน้าอย่างน้อย 5 นาที และเผื่อเวลาอัปโหลดไฟล์':'การกำหนดเวลาเองรออัปเดตฟังก์ชัน Supabase • ยังส่งเข้าคิวเดิมได้';
                     $('pub-schedule-at').min=S.localValue(Date.now()+6*60000);
-                    $('pub-schedule-at').value=S.localValue(Date.now()+30*60000);
+                    $('pub-schedule-at').value=item.draftDueAt?S.localValue(Date.parse(item.draftDueAt)):S.localValue(Date.now()+30*60000);
+                    $('pub-schedule-mode').value=item.scheduleMode==='custom'?'custom':'queue';
                     updateSchedule();
                     const video=item.meta.kind==='video';
                     $('pub-ai').closest('label').hidden=!video;
@@ -177,10 +201,14 @@
             }
             for(const [id,target]of Object.entries(item.targets)){
                 const row=document.createElement('div');row.className='pub-record-target';const detail=document.createElement('div');
-                const checked=R.check(item.meta,id);
+                const checked=R.checkUpload(item.meta,id);
                 detail.append(text('strong',R.platforms[id].name));
                 if(target.sendError)detail.append(text('p',target.sendError,'pub-error'));
-                detail.append(text('p',target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':deliveryLabels[target.status]|| (target.status==='manual'?'รอลงเอง · '+checked.reasons[0]:'พร้อมเตรียมส่ง · หรือลงเองได้'),target.status==='posted'?'pub-posted':''));
+                const done=['sent','posted'].includes(target.status);
+                const blocked=['manual','rejected','error'].includes(target.status)||(['connection'].includes(target.status)&&checked.kind==='manual');
+                const pending=['queued','scheduled','sending','needs_approval'].includes(target.status);
+                const statusLabel=target.status==='sent'?'✓ เผยแพร่แล้ว · ยืนยันจาก Buffer':target.status==='posted'?'✓ ลงเองแล้ว · ยืนยันโดยผู้ใช้':blocked?'⛔ '+(deliveryLabels[target.status]||'ส่งผ่านเว็บไม่ได้ · '+checked.reasons.join(' • ')):pending?'◷ '+deliveryLabels[target.status]:deliveryLabels[target.status]||'เตรียมโพสต์ · ยังไม่ได้ส่ง';
+                detail.append(text('p',statusLabel,'pub-status '+(done?'pub-status-success':blocked?'pub-status-error':'pub-status-pending')));
                 if(target.dueAt&&Number.isFinite(Date.parse(target.dueAt)))detail.append(text('p','เวลาใน Buffer: '+S.format(target.dueAt)));
                 else if(target.requestedDueAt&&Number.isFinite(Date.parse(target.requestedDueAt)))detail.append(text('p','เวลาที่ขอ: '+S.format(target.requestedDueAt)+' · กดตรวจสถานะเพื่อยืนยัน'));
                 if(target.url && R.validPostUrl(target.url,id)){const a=text('a','เปิดโพสต์ ↗');a.href=target.url;a.target='_blank';a.rel='noopener noreferrer';detail.append(a);}

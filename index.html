@@ -8,7 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Team อีนิล - จัดการงานทีม</title>
-    <link rel="stylesheet" href="publish.css?v=2">
+    <link rel="stylesheet" href="publish.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -720,13 +720,21 @@ body {
                     <p class="pub-help">ตรวจเบื้องต้นตามข้อกำหนดการส่งผ่าน Buffer ไม่ใช่ข้อจำกัดของการลงโดยตรง • คลิปเกิน 6 นาทีตั้งไว้ให้ลงเองทุกช่องทาง</p>
                     <div id="pub-platforms"></div>
                     <div class="pub-check-summary" id="pub-check-summary" aria-live="polite">เลือกไฟล์เพื่อดูผลตรวจแต่ละช่องทาง</div>
+                    <div class="pub-compose-schedule">
+                        <h2>กำหนดวันเวลาโพสต์</h2>
+                        <label class="pub-field">วิธีตั้งเวลา<select id="pub-compose-mode"><option value="queue">ตามคิว Buffer</option><option value="custom">เลือกวันและเวลาเอง</option></select></label>
+                        <label class="pub-field">วันและเวลาโพสต์ (เวลาไทย UTC+7)<input id="pub-compose-at" type="datetime-local" step="60" disabled></label>
+                        <p id="pub-compose-time-summary" class="pub-help" aria-live="polite"></p>
+                        <p id="pub-compose-time-error" class="pub-error" role="alert"></p>
+                        <p class="pub-help">การบันทึกยังไม่ส่งโพสต์ ต้องกด “ส่งเข้า Buffer” ที่รายการด้านล่างเพื่อยืนยันอีกครั้ง</p>
+                    </div>
                     <button class="btn btn-primary pub-full" id="pub-save" type="submit" disabled><i class="fas fa-save"></i> บันทึกรายการเตรียมโพสต์</button>
                     <p class="pub-help">บันทึกรายการก่อน แล้วกด “ส่งเข้า Buffer” ที่รายการด้านล่าง • อัปโหลดได้ไม่เกิน 50 MB ต่อไฟล์</p>
                     <p class="pub-help">บันทึกรายการแล้วเปิด “ลงเอง” เพื่อดาวน์โหลดไฟล์ คัดลอกแคปชัน และบันทึกลิงก์โพสต์ได้</p>
                     <details class="pub-rules"><summary>เกณฑ์ตรวจไฟล์และแหล่งข้อมูล</summary><p>Facebook Reels: 3–90 วินาที, 9:16, อย่างน้อย 540 × 960 px, ไม่เกิน 1 GB<br>YouTube Shorts: ไม่เกิน 3 นาที, แนวตั้งหรือจัตุรัส, ไม่เกิน 10 GB<br>TikTok: 3 วินาที–10 นาที, อย่างน้อย 360 × 360 px, ไม่เกิน 1 GB</p><p>ตรวจจากข้อมูลที่เบราว์เซอร์อ่านได้ ยังไม่ยืนยันเฟรมเรต สิทธิ์เพลง หรือข้อจำกัดเฉพาะบัญชี ผลผ่านจึงยังไม่ใช่การรับรองว่าเผยแพร่ได้</p><a href="https://support.buffer.com/en-us/articles/sharing-videos-through-buffer-LOe2p2rnAI" target="_blank" rel="noopener noreferrer">ข้อกำหนด Buffer · ตรวจเมื่อ 15 พ.ย. 2569 ↗</a></details>
                 </div>
             </form>
-            <div class="pub-library-header"><div><h2>รายการเตรียมโพสต์ <span id="pub-count">0</span></h2><p class="pub-help">ยืนยันแยกช่องทางหลังลงเองสำเร็จ</p></div><label>แสดง <select id="pub-filter"><option value="all">ทั้งหมด</option><option value="pending">ยังลงไม่ครบ</option><option value="posted">ลงครบแล้ว</option></select></label></div>
+            <div class="pub-library-header"><div><h2>รายการโพสต์ <span id="pub-count">0</span></h2><p class="pub-help">กด “ตรวจสถานะ” เพื่ออัปเดตจาก Buffer • ✓ สีเขียว = เผยแพร่แล้ว • ◷ = รอเผยแพร่</p></div><label>แสดง <select id="pub-filter"><option value="all">ทั้งหมด</option><option value="pending">ยังลงไม่ครบ</option><option value="posted">ลงครบแล้ว</option></select></label></div>
             <div id="pub-library" class="pub-library" aria-live="polite"></div>
             <p id="pub-message" class="pub-message" role="status"></p>
         </section>
@@ -2170,10 +2178,10 @@ setInterval(()=>{if(dataReady && byId('page-workflow').classList.contains('activ
 renderDashboard();
 initCalendar();
     </script>
-    <script src="publish-rules.js?v=1"></script>
+    <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
     <script src="buffer-client.js?v=3"></script>
     <script src="publish-schedule.js?v=1"></script>
-    <script src="publish.js?v=3"></script>
+    <script src="publish.js?v=4"></script>
 </body>
 </html>
