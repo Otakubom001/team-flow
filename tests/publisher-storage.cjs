@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const create=require('../publisher-storage.js');
+function memory(){const m=new Map();return {get length(){return m.size;},key:i=>[...m.keys()][i]??null,getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};}
+const local=memory(),tab=memory(),key='teamflow-publisher';
+let storage=create(local,tab);
+tab.setItem(key,'existing-session');
+assert.equal(storage.getItem(key),'existing-session');
+assert.equal(create(local,memory()).getItem(key),null,'default sessions must not survive closing a tab');
+local.setItem('other-app','keep');
+storage.setRemember(true);
+assert.equal(tab.getItem(key),null);
+assert.equal(create(local,memory()).getItem(key),'existing-session','remember existing login without requiring re-login');
+storage.setItem(key,'refreshed-session');
+assert.equal(local.getItem(key),'refreshed-session');
+storage.setRemember(false);
+assert.equal(local.getItem(key),null);
+assert.equal(storage.getItem(key),'refreshed-session');
+assert.equal(create(local,memory()).getItem(key),null);
+storage.setRemember(true);
+storage.removeItem(key);
+assert.equal(create(local,memory()).getItem(key),null,'sign-out must clear persistent session');
+assert.equal(local.getItem('other-app'),'keep');
+console.log('PASS: tab-only default, existing-login migration, remembered reload, refresh, opt-out and sign-out');

@@ -2,7 +2,14 @@
  'use strict';
  const $=id=>document.getElementById(id);
  // Separate session from the legacy PIN UI. No secret keys in this client.
- const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storage:sessionStorage,storageKey:'teamflow-publisher',persistSession:true,detectSessionInUrl:false}});
+ const authStorage=window.createPublisherStorage(localStorage,sessionStorage);
+ const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storage:authStorage,storageKey:'teamflow-publisher',persistSession:true,detectSessionInUrl:false}});
+ $('pub-remember').checked=authStorage.remembered();
+ $('pub-remember').onchange=()=>{
+  try{authStorage.setRemember($('pub-remember').checked);
+   $('pub-auth-message').textContent=$('pub-remember').checked?'จะจำการเข้าสู่ระบบบนเครื่องนี้แล้ว':'เปลี่ยนเป็นจำเฉพาะแท็บนี้แล้ว';
+  }catch{$('pub-remember').checked=authStorage.remembered();$('pub-auth-message').textContent='บันทึกการตั้งค่าไม่ได้ กรุณาตรวจพื้นที่จัดเก็บของเบราว์เซอร์';}
+ };
  let channels=[],user=null;
  const errors={LOGIN_REQUIRED:'กรุณาเข้าสู่ระบบผู้โพสต์อีกครั้ง',PUBLISHER_REQUIRED:'บัญชีนี้ยังไม่ได้รับสิทธิ์โพสต์',MANUAL_REQUIRED:'ไฟล์นี้ต้องลงเองในช่องทางที่เลือก',INVALID_MEDIA:'ไฟล์ไม่ถูกต้องหรือเกิน 50 MB',MEDIA_MISMATCH:'ข้อมูลไฟล์บนเซิร์ฟเวอร์ไม่ตรง กรุณาตรวจไฟล์',MEDIA_NOT_FOUND:'ยังไม่พบไฟล์ที่อัปโหลด',METADATA_REQUIRED:'กรุณาระบุข้อมูลเนื้อหาวิดีโอ',SERVER_CONFIG_MISSING:'ระบบหลังบ้านยังตั้งค่าไม่ครบ',SERVICE_UNAVAILABLE:'ติดต่อระบบไม่ได้ กรุณาตรวจสถานะก่อนส่งซ้ำ'};
  async function call(body){

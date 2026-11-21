@@ -65,7 +65,7 @@ function for the website. Do not replace the working diagnostic with this code.
 ### Behaviour and limits
 
 - Files and draft records remain browser-local until the user explicitly confirms
-  the upload and queue submission. Session tokens use sessionStorage. No self-signup
+  the upload and queue submission. Session tokens use sessionStorage by default. The optional remember-device checkbox migrates the publisher session to localStorage; unchecking moves it back. Sign-out clears both stores. Passwords are never saved by this feature. No self-signup
   UI or browser-accessible service/Buffer keys are added.
 - Buffer requires a stable public direct file URL until publication. Public bucket
   URLs are not private storage: anyone with a URL can download the file. The UI

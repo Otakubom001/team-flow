@@ -742,6 +742,8 @@ body {
         <form method="dialog"><button class="btn btn-sm pub-close" aria-label="ปิด">✕</button></form>
         <h2 id="pub-connection-title">บัญชีผู้โพสต์</h2>
         <p>ใช้บัญชีอีเมลที่ได้รับสิทธิ์ส่งโพสต์ แยกจาก PIN เข้าเว็บ</p>
+        <label class="pub-confirm"><input type="checkbox" id="pub-remember"> จำการเข้าสู่ระบบบนเครื่องนี้</label>
+        <p class="pub-help">เลือกได้ทั้งก่อนและหลังเข้าสู่ระบบ เหมาะกับเครื่องส่วนตัว กดออกจากบัญชีเพื่อล้างการเข้าสู่ระบบที่จำไว้</p>
         <form id="pub-auth-form">
             <label class="pub-field">อีเมล<input type="email" id="pub-auth-email" required autocomplete="username"></label>
             <label class="pub-field">รหัสผ่าน<input type="password" id="pub-auth-password" required autocomplete="current-password"></label>
@@ -2164,7 +2166,8 @@ renderDashboard();
 initCalendar();
     </script>
     <script src="publish-rules.js?v=1"></script>
-    <script src="buffer-client.js?v=1"></script>
+    <script src="publisher-storage.js?v=1"></script>
+    <script src="buffer-client.js?v=2"></script>
     <script src="publish.js?v=2"></script>
 </body>
 </html>
