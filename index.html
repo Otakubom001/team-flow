@@ -734,7 +734,7 @@ body {
                     <details class="pub-rules"><summary>เกณฑ์ตรวจไฟล์และแหล่งข้อมูล</summary><p>Facebook Reels: 3–90 วินาที, 9:16, อย่างน้อย 540 × 960 px, ไม่เกิน 1 GB<br>YouTube Shorts: ไม่เกิน 3 นาที, แนวตั้งหรือจัตุรัส, ไม่เกิน 10 GB<br>TikTok: 3 วินาที–10 นาที, อย่างน้อย 360 × 360 px, ไม่เกิน 1 GB</p><p>ตรวจจากข้อมูลที่เบราว์เซอร์อ่านได้ ยังไม่ยืนยันเฟรมเรต สิทธิ์เพลง หรือข้อจำกัดเฉพาะบัญชี ผลผ่านจึงยังไม่ใช่การรับรองว่าเผยแพร่ได้</p><a href="https://support.buffer.com/en-us/articles/sharing-videos-through-buffer-LOe2p2rnAI" target="_blank" rel="noopener noreferrer">ข้อกำหนด Buffer · ตรวจเมื่อ 15 พ.ย. 2569 ↗</a></details>
                 </div>
             </form>
-            <div class="pub-library-header"><div><h2>รายการโพสต์ <span id="pub-count">0</span></h2><p class="pub-help">กด “ตรวจสถานะ” เพื่ออัปเดตจาก Buffer • ✓ สีเขียว = เผยแพร่แล้ว • ◷ = รอเผยแพร่</p></div><label>แสดง <select id="pub-filter"><option value="all">ทั้งหมด</option><option value="pending">ยังลงไม่ครบ</option><option value="posted">ลงครบแล้ว</option></select></label></div>
+            <div class="pub-library-header"><div><h2>รายการโพสต์ <span id="pub-count">0</span></h2><p class="pub-help">ตรวจสถานะอัตโนมัติทุก 30 วินาทีขณะเปิดหน้านี้และล็อกอิน • รายการตั้งเวลาจะตรวจเมื่อถึงเวลา • ✓ สีเขียว = เผยแพร่แล้ว • กด “ตรวจสถานะ” ได้ทุกเวลา</p></div><label>แสดง <select id="pub-filter"><option value="all">ทั้งหมด</option><option value="pending">ยังลงไม่ครบ</option><option value="posted">ลงครบแล้ว</option></select></label></div>
             <div id="pub-library" class="pub-library" aria-live="polite"></div>
             <p id="pub-message" class="pub-message" role="status"></p>
         </section>
@@ -2180,8 +2180,9 @@ initCalendar();
     </script>
     <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
-    <script src="buffer-client.js?v=3"></script>
+    <script src="buffer-client.js?v=4"></script>
     <script src="publish-schedule.js?v=1"></script>
-    <script src="publish.js?v=4"></script>
+    <script src="publish-poll.js?v=1"></script>
+    <script src="publish.js?v=5"></script>
 </body>
 </html>

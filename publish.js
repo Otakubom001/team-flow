@@ -33,6 +33,32 @@
     const selected=new Set(['facebook','tiktok','youtube']);
     const text=(tag,value,cls)=>{const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;};
     function message(value){$('pub-message').textContent=value;}
+    const statusRequests=new Map();
+    function checkStatus(item,platform){
+        const key=item.id+':'+platform;
+        if(statusRequests.has(key))return statusRequests.get(key);
+        const request=(async()=>{
+            const result=await B.status(item,platform);
+            // A deleted/replaced record must never be resurrected by a late response.
+            if(!records.includes(item))return;
+            if(result.state==='not_sent')throw new Error('ไม่พบการส่งในบัญชีนี้ กรุณาตรวจบัญชีผู้โพสต์');
+            const target=item.targets[platform];
+            target.status=result.providerStatus||result.state;
+            target.postId=result.post_id||target.postId;
+            target.lastCheckedAt=new Date().toISOString();
+            if(Object.hasOwn(result,'dueAt'))target.dueAt=result.dueAt;
+            if(result.url&&R.validPostUrl(result.url,platform))target.url=result.url;
+            await store('put',item);renderLibrary();
+        })().finally(()=>statusRequests.delete(key));
+        statusRequests.set(key,request);return request;
+    }
+    const pollStatus=window.PublishPoll.create({
+        active:()=>!document.hidden&&!busy&&B.ready()&&$('page-publish').classList.contains('active'),
+        items:()=>records.slice(),owns:item=>B.owns(item),check:checkStatus,
+        onError:error=>message('ตรวจสถานะอัตโนมัติไม่สำเร็จ: '+error.message+' · จะลองใหม่ในรอบถัดไป')
+    });
+    setInterval(pollStatus,30000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollStatus();});
     function database(){
         if(!dbPromise)dbPromise=new Promise((resolve,reject)=>{
             const request=indexedDB.open('teamflow-publishing',1);
@@ -217,15 +243,7 @@
                 if(deliveryLabels[target.status]){
                     action.textContent='ตรวจสถานะ';action.onclick=async()=>{
                         action.disabled=true;
-                        try{const result=await B.status(item,id);
-                            if(result.state!=='not_sent'){
-                                target.status=result.providerStatus||result.state;
-                                target.postId=result.post_id||target.postId;
-                                if(Object.hasOwn(result,'dueAt'))target.dueAt=result.dueAt;
-                                if(result.url&&R.validPostUrl(result.url,id))target.url=result.url;
-                                await store('put',item);renderLibrary();
-                            }else{message('ไม่พบการส่งในบัญชีนี้ กรุณาตรวจบัญชีผู้โพสต์');}
-                        }catch(e){message(e.message);}finally{action.disabled=false;}
+                        try{await checkStatus(item,id);}catch(e){message(e.message);}finally{action.disabled=false;}
                     };
                     const link=text('a','เปิด Buffer');link.href='https://publish.buffer.com/';link.target='_blank';link.rel='noopener noreferrer';detail.append(link);
                 }

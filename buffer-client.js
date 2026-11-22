@@ -38,6 +38,7 @@
  $('pub-signout').onclick=async()=>{await client.auth.signOut({scope:'local'});await refresh();};
  window.PublishBuffer={
   ready:()=>!!user,
+  owns:item=>!!user&&(!item.publisherId||item.publisherId===user.id),
   canSchedule:()=>customSchedule,
   channel:p=>channels.find(c=>c.platform===p),
   async upload(item){

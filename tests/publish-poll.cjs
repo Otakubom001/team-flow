@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict');
+const {create}=require('../publish-poll.js');
+(async()=>{
+ let active=true,calls=[],errors=0;
+ const item={targets:{facebook:{status:'queued'},youtube:{status:'sent'},tiktok:{status:'manual'}}};
+ const tick=create({active:()=>active,items:()=>[item],owns:()=>true,check:async(_,p)=>{calls.push(p);item.targets[p].status='sent';},onError:()=>errors++});
+ active=false;await tick();assert.deepEqual(calls,[]);
+ active=true;await tick();await tick();assert.deepEqual(calls,['facebook']);
+ item.targets.facebook={status:'scheduled',lastCheckedAt:new Date().toISOString(),dueAt:new Date(Date.now()+60000).toISOString()};
+ await tick();assert.equal(calls.length,1);
+ item.targets.facebook.dueAt=new Date(Date.now()-1).toISOString();await tick();assert.equal(calls.length,2);
+ let release,count=0;
+ item.targets.facebook={status:'unknown'};
+ const slow=create({active:()=>true,items:()=>[item],owns:()=>true,check:()=>{count++;return new Promise(r=>release=r);},onError:()=>errors++});
+ const first=slow();await slow();assert.equal(count,1);release();await first;
+ const foreign=create({active:()=>true,items:()=>[item],owns:()=>false,check:()=>{throw Error('wrong account');},onError:()=>errors++});
+ await foreign();assert.equal(errors,0);
+ const failing=create({active:()=>true,items:()=>[item],owns:()=>true,check:()=>{throw Error('offline');},onError:()=>errors++});
+ await failing();await failing();assert.equal(errors,2);
+ console.log('PASS: polling visibility, terminal states, future schedule, concurrency, ownership and error recovery');
+})().catch(e=>{console.error(e);process.exitCode=1;});
