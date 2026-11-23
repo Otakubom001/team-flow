@@ -539,10 +539,16 @@ body {
                 <p class="subtitle" id="dashboard-date"></p>
             </div>
 <div class="studio-hero"><div><div class="hero-eyebrow">LET’S MAKE IT HAPPEN</div><h2>ทุกเรื่องเล่า เริ่มต้นที่ทีมเรา</h2><p>รวมไอเดีย จัดการงาน และวางแผนโพสต์<br>ให้ทุกเรื่องราวพร้อมไปถึงคนดู</p><button class="hero-action" onclick="navigateTo('content')">เปิดพื้นที่เนื้อเรื่อง <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><img src="assets/logo-midnight-silver.png" alt="อีนิล — Midnight Studio"></div>
-<div class="stats-grid"><button class="stat-card" id="stat-today" style="--accent:#6C5CE7" onclick="showDashboardQueue('today')"><i class="stat-icon fas fa-calendar-day"></i><span><strong class="stat-number">0</strong>ต้องโพสต์วันนี้</span></button><button class="stat-card" id="stat-overdue" style="--accent:#DA565C" onclick="showDashboardQueue('overdue')"><i class="stat-icon fas fa-exclamation-circle"></i><span><strong class="stat-number">0</strong>เลยกำหนด</span></button><button class="stat-card" id="stat-unscheduled" style="--accent:#16866E" onclick="showDashboardQueue('unscheduled')"><i class="stat-icon fas fa-calendar-plus"></i><span><strong class="stat-number">0</strong>พร้อมโพสต์แต่ยังไม่เลือกวัน</span></button></div>
+<div class="stats-grid">
+    <button class="stat-card" id="stat-scheduled" style="--accent:#6C5CE7" onclick="showDashboardQueue('scheduled')"><i class="stat-icon fas fa-calendar-check"></i><span><strong class="stat-number">0</strong>ตั้งเวลาโพสต์แล้ว</span></button>
+    <button class="stat-card" id="stat-posted" style="--accent:#16866E" onclick="showDashboardQueue('posted')"><i class="stat-icon fas fa-check-circle"></i><span><strong class="stat-number">0</strong>โพสต์แล้วทั้งหมด</span></button>
+    <button class="stat-card" id="stat-waiting" style="--accent:#D18A24" onclick="showDashboardQueue('waiting')"><i class="stat-icon fas fa-film"></i><span><strong class="stat-number">0</strong>รอทำคลิป</span></button>
+    <button class="stat-card" id="stat-unscheduled" style="--accent:#16866E" onclick="showDashboardQueue('unscheduled')"><i class="stat-icon fas fa-calendar-plus"></i><span><strong class="stat-number">0</strong>พร้อมโพสต์แต่ยังไม่เลือกวัน</span></button>
+</div>
             <div class="dashboard-grid">
                 <div class="card">
-                    <h3 id="queue-heading">ต้องโพสต์วันนี้</h3>
+                    <h3 id="queue-heading">ตั้งเวลาโพสต์แล้ว</h3>
+                    <p class="pub-help">ยอดจากสถานะงานและการปักปฏิทิน • งานที่ปักไว้ไม่นับซ้ำเป็นโพสต์แล้ว • ไม่ใช่ผลยืนยันการเผยแพร่จาก Buffer</p>
                     <div id="recent-items" class="recent-list"></div><div class="pager" id="queue-pager"></div>
                 </div>
                 <div class="card">
@@ -1322,7 +1328,7 @@ function renderDashboard() {
     showDashboardQueue(dashboardView,dashboardPage);
     var today = localDay();
     var upcoming = data.contents
-        .filter(function(c) { return c.postDate && c.postDate >= today && c.status !== 'posted'; })
+        .filter(function(c) { return c.postDate >= today && isCalendarScheduled(c); })
         .sort(function(a, b) { return a.postDate.localeCompare(b.postDate); }).slice(0, 5);
     var upcomingEvts = data.events
         .filter(function(e) { return e.date >= today && e.type === 'post_schedule'; })
@@ -1924,12 +1930,16 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.show').forEach(function(m) { m.classList.remove('show'); });
 });
 
+function isCalendarScheduled(c) {
+    return !!c.postDate && (c.status !== 'posted' || !!c.calendarPreviousStatus);
+}
 const dashboardViews = {
-    today: ['ต้องโพสต์วันนี้', c => c.postDate === localDay()],
-    overdue: ['เลยกำหนด', c => c.postDate && c.postDate < localDay()],
+    scheduled: ['ตั้งเวลาโพสต์แล้ว', isCalendarScheduled],
+    posted: ['โพสต์แล้วทั้งหมด', c => c.status === 'posted' && !isCalendarScheduled(c)],
+    waiting: ['รอทำคลิป', c => c.status === 'waiting_clip'],
     unscheduled: ['พร้อมโพสต์แต่ยังไม่เลือกวัน', c => c.status === 'ready' && !c.postDate]
 };
-let dashboardView = 'today';
+let dashboardView = 'scheduled';
 let dashboardPage = 0;
 let storyPage = 0;
 const expandedColumns = new Set();
@@ -1945,13 +1955,13 @@ function storyTab(c) {
 }
 function showDashboardQueue(view, page = 0) {
     dashboardView = view;
-    const active = loadData().contents.filter(c => c.status !== 'posted');
+    const contents = loadData().contents;
     for (const [key, [label, match]] of Object.entries(dashboardViews)) {
         const btn = byId('stat-' + key);
-        btn.querySelector('strong').textContent = active.filter(match).length;
+        btn.querySelector('strong').textContent = contents.filter(match).length;
         btn.setAttribute('aria-pressed', String(key === view));
     }
-    const rows = active.filter(dashboardViews[view][1]).sort((a,b) => (a.postDate || '').localeCompare(b.postDate || '') || a.title.localeCompare(b.title,'th'));
+    const rows = contents.filter(dashboardViews[view][1]).sort((a,b) => (a.postDate || '').localeCompare(b.postDate || '') || a.title.localeCompare(b.title,'th'));
     dashboardPage = Math.max(0, Math.min(page, Math.ceil(rows.length/5)-1));
     byId('queue-heading').textContent = dashboardViews[view][0];
     byId('recent-items').innerHTML = rows.slice(dashboardPage*5,dashboardPage*5+5).map(c =>
