@@ -59,9 +59,30 @@ html[data-studio="ladyploy"] [data-studio-only="enil"] { display: none !importan
 .trend-source-status[data-kind="fail"]::before { content: '● '; color: var(--danger); }
 .trend-source-status[data-kind="off"]::before { content: '○ '; }
 .trend-source-note { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+/* Highlight sections: กระแสแรง / น่าจับตา / คลิป / โมเดลใหม่ */
+.trend-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 28px; }
+.trend-sections[hidden] { display: none; }
+.trend-section { padding: 18px 18px 10px; min-width: 0; }
+.trend-section-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.trend-section-title i { color: var(--primary); }
+.trend-section-note { font-size: 11px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 10px; }
+.trend-section-empty { font-size: 13px; color: var(--text-secondary); padding: 14px 0 10px; }
+.trend-rows { list-style: none; margin: 0; padding: 0; }
+.trend-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+.trend-rank { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--primary) 12%, var(--card-bg)); color: var(--primary); }
+.trend-row-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.trend-row-title { font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+a.trend-row-title:hover { color: var(--primary); text-decoration: underline; }
+.trend-row-meta { font-size: 11px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.trend-lang { align-self: flex-start; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-secondary); }
+.trend-save-small { padding: 6px 10px; min-height: 32px; white-space: nowrap; font-size: 11px; }
+.trends-all-heading { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
 @media (max-width: 1024px) {
     .trends-layout { grid-template-columns: 1fr; }
     .trends-sources { position: static; }
+}
+@media (max-width: 760px) {
+    .trend-sections { grid-template-columns: 1fr; }
 }
 
 /* ============================================================================

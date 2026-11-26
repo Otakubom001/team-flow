@@ -50,6 +50,32 @@ select tablename, policyname, cmd, roles from pg_policies
 แหล่งข้อมูลอยู่ในตาราง `ai_trend_sources` ปิดแหล่งไหนได้โดยตั้ง `enabled = false`
 ผลการดึงแต่ละครั้ง (เวลา สำเร็จหรือไม่ จำนวน และสาเหตุที่ล้มเหลว) อยู่ใน `ai_trend_runs`
 
+## 3.1 กระแส AI รอบที่ 2: 4 หมวดไฮไลต์ + อัปเดตเองทุกชั่วโมง
+
+ทำตามลำดับนี้ (ฟังก์ชันเวอร์ชันใหม่ต้องใช้คอลัมน์ที่ migration นี้เพิ่ม):
+
+1. SQL Editor → New query → วาง `migrations/202611270002_trends_sections.sql` → Run
+   เพิ่มแหล่ง OpenAI News, Google AI Blog, Hugging Face และ YouTube กับคอลัมน์ `metric`
+2. Edge Functions → `dynamic-function` → Code → แทนโค้ดทั้งหมดด้วย `functions/ai-trends/index.ts` → Deploy updates
+3. SQL Editor → New query → วาง `migrations/202611270003_trends_schedule.sql` → Run
+   ตั้งเวลาให้ดึงเองทุกชั่วโมง (นาทีที่ 5) ผลสุดท้ายต้องเห็นแถว `ladyploy-ai-trends` ที่ `active = true`
+4. (ไม่บังคับ) คลิป AI ที่เป็นกระแส ต้องใช้ YouTube API key ฟรี:
+   - console.cloud.google.com → สร้างโปรเจกต์ → APIs & Services → Library → เปิด **YouTube Data API v3**
+   - Credentials → Create credentials → API key → Edit → API restrictions: เลือกเฉพาะ YouTube Data API v3
+   - Supabase → Edge Functions → Secrets → เพิ่ม `YOUTUBE_API_KEY` = key นั้น (ห้ามใส่ในหน้าเว็บหรือไฟล์ใน repo)
+   - ใช้โควตาประมาณ 2,400 จาก 10,000 หน่วยฟรีต่อวัน (ดึงทุกชั่วโมง)
+   ถ้ายังไม่ตั้ง หน้าเว็บจะขึ้นว่า "ยังไม่ได้เชื่อม YouTube" และไม่แสดงคลิปตัวอย่าง
+
+4 หมวดคัดอย่างไร (ไม่ใช้ AI):
+- **กระแสแรงตอนนี้**: คำค้นรอบล่าสุดจาก Google Trends ไทย เรียงตามปริมาณค้นหา (ทุกหมวด)
+- **ข่าว AI ที่น่าจับตา**: ข่าว 7 วันล่าสุด ให้คะแนนจากคำสำคัญ (เปิดตัว/ประกาศ, บริษัท AI รายใหญ่, ฟรี/ราคา/กฎหมาย/ไทย) และความใหม่
+- **คลิป AI ที่เป็นกระแส**: คลิปเกี่ยวกับ AI ยอดดูสูงสุดใน YouTube ประเทศไทย 7 วันล่าสุด
+- **โมเดล AI ที่เข้ามาใหม่**: โพสต์ที่มีชื่อรุ่นโมเดล (GPT-6, Gemini 3 ฯลฯ) หรือคำว่า "โมเดล" รวมกับโมเดลมาแรงบน
+  Hugging Face ที่สร้างไม่เกิน 45 วัน (ตัดไฟล์แปลงรูปแบบอย่าง GGUF และรุ่น uncensored ออก)
+
+ย้อนกลับ: `select cron.unschedule('ladyploy-ai-trends');` แล้วรัน `202611270002_trends_sections_rollback.sql`
+และคืนโค้ดฟังก์ชันเป็นเวอร์ชันก่อนหน้า
+
 ## 4. Deploy หน้าเว็บ
 
 อัปโหลด/commit ไฟล์ `index.html`, `theme-init.js`, `studios.css`, `trends.js` ขึ้น GitHub Pages

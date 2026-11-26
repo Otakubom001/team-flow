@@ -8,6 +8,8 @@
 // --no-migration starts the database as production is today (no studios), to check
 // that the website keeps working for อีนิล before the migration is run.
 // Test PIN: 1234 (local only).
+// To exercise the real ai-trends handler against live feeds, run it with Deno and
+// SUPABASE_URL=http://localhost:<port>, SUPABASE_SERVICE_ROLE_KEY=test-service-role.
 const http = require('http'), fs = require('fs'), path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -53,7 +55,8 @@ function parseFilters(params) {
         const [, op, val] = m, col = ident(key);
         if (op === 'is') where.push(col + ' is ' + ({ null: 'null', true: 'true', false: 'false' }[val] || 'null'));
         else if (op === 'in') { const list = val.replace(/^\(|\)$/g, '').split(','); where.push(col + ' in (' + list.map(v => { values.push(v); return '$' + values.length; }).join(',') + ')'); }
-        else { values.push(val); where.push(col + ' ' + { eq: '=', neq: '<>', lt: '<', gt: '>', lte: '<=', gte: '>=' }[op] + ' $' + values.length); }
+        else if (op === 'eq' || op === 'neq') { values.push(val); where.push(col + '::text ' + (op === 'eq' ? '=' : '<>') + ' $' + values.length); }
+        else { values.push(val); where.push(col + ' ' + { lt: '<', gt: '>', lte: '<=', gte: '>=' }[op] + ' $' + values.length); }
     }
     return { where: where.length ? ' where ' + where.join(' and ') : '', values };
 }
@@ -102,7 +105,8 @@ async function rest(req, table, params, body) {
         sql = 'delete from ' + t + f.where + (wantRows ? ' returning ' + selectList(params) : '');
     } else return [405, { message: 'method' }];
 
-    await db.exec('set role anon');
+    // "Bearer test-service-role" stands in for the Edge Function's service role (local only).
+    await db.exec(req.headers.authorization === 'Bearer test-service-role' ? 'set role service_role' : 'set role anon');
     let result;
     try { result = await db.query(sql, values); }
     finally { await db.exec('reset role'); }
@@ -137,7 +141,12 @@ function serveStatic(req, res, pathname) {
     db = new PGlite();
     await db.exec(BASELINE);
     await seed();
-    if (MIGRATE) await db.exec(fs.readFileSync(path.join(ROOT, 'supabase/migrations/202611270001_studios.sql'), 'utf8'));
+    if (MIGRATE) {
+        // Schema migrations only; the schedule needs pg_cron, which PGlite doesn't have.
+        for (const file of ['202611270001_studios.sql', '202611270002_trends_sections.sql']) {
+            await db.exec(fs.readFileSync(path.join(ROOT, 'supabase/migrations', file), 'utf8'));
+        }
+    }
 
     http.createServer((req, res) => {
         const url = new URL(req.url, 'http://localhost');

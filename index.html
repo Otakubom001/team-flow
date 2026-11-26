@@ -427,7 +427,7 @@ body {
     }
     </style>
     <link rel="stylesheet" href="midnight.css?v=1">
-    <link rel="stylesheet" href="studios.css?v=1">
+    <link rel="stylesheet" href="studios.css?v=2">
     <script src="theme-init.js?v=2"></script>
 </head>
 <body>
@@ -728,12 +728,14 @@ body {
         <section class="page" id="page-trends" aria-labelledby="trends-heading">
             <p class="page-kicker">AI TRENDS</p>
             <div class="page-header">
-                <div><h1 id="trends-heading"><i class="fas fa-bolt"></i> กระแส AI</h1><p class="subtitle">หัวข้อข่าวและเทรนด์ภาษาไทยจากแหล่งที่ระบุไว้ด้านล่าง เปิดอ่านต้นฉบับก่อนนำไปทำคอนเทนต์ทุกครั้ง</p></div>
+                <div><h1 id="trends-heading"><i class="fas fa-bolt"></i> กระแส AI</h1><p class="subtitle">หัวข้อข่าว เทรนด์ คลิป และโมเดล AI จากแหล่งที่ระบุไว้ด้านล่าง ระบบอัปเดตเองทุกชั่วโมง เปิดอ่านต้นฉบับก่อนนำไปทำคอนเทนต์ทุกครั้ง</p></div>
                 <button type="button" class="btn btn-primary" id="trends-refresh"><i class="fas fa-sync-alt" aria-hidden="true"></i> อัปเดตข่าว</button>
             </div>
             <p class="trends-message" id="trends-message" role="status" aria-live="polite"></p>
+            <div class="trend-sections" id="trend-sections" hidden></div>
             <div class="trends-layout">
                 <div class="trends-main">
+                    <h2 class="trends-all-heading">ข่าวและเทรนด์ทั้งหมด</h2>
                     <div class="trends-filters" role="group" aria-label="กรองตามหมวด" id="trends-categories"></div>
                     <div id="trends-list" class="trends-list"></div>
                 </div>
@@ -2366,7 +2368,7 @@ applyStudioChrome();
 renderDashboard();
 initCalendar();
     </script>
-    <script src="trends.js?v=2"></script>
+    <script src="trends.js?v=3"></script>
     <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
     <script src="buffer-client.js?v=4"></script>

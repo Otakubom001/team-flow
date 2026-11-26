@@ -1,33 +1,55 @@
-// ai-trends: ดึงหัวข้อข่าว/เทรนด์ AI ภาษาไทยจาก RSS ที่ตั้งไว้ในตาราง ai_trend_sources
+// ai-trends: ดึงหัวข้อข่าว/เทรนด์ AI จากแหล่งที่ตั้งไว้ในตาราง ai_trend_sources
 // แล้วบันทึกลง ai_trend_items พร้อมบันทึกผลแต่ละแหล่งใน ai_trend_runs
-// - ไม่ใช้ AI API: เก็บเฉพาะหัวข้อ ลิงก์ วันที่ และหมวดที่จัดด้วยคำค้น
+// - ไม่ใช้ AI API: เก็บเฉพาะหัวข้อ ลิงก์ วันที่ ตัวเลขความนิยม และหมวดที่จัดด้วยคำค้น
 // - หน้าเว็บอ่านตารางได้อย่างเดียว ฟังก์ชันนี้เขียนด้วย service role ฝั่งเซิร์ฟเวอร์
 // - เรียกซ้ำได้ทุก 15 นาที เรียกถี่กว่านั้นจะได้ข้อมูลเดิมกลับไป
+//   (ตัวตั้งเวลาใน Supabase เรียกทุกชั่วโมง: migrations/202611270003_trends_schedule.sql)
+// แหล่งข้อมูล:
+//   rss            RSS/Atom ทั่วไป
+//   google_trends  RSS ของ Google Trends (คำค้นยอดนิยม + ปริมาณการค้นหา)
+//   hf_models      Hugging Face API: โมเดลที่กำลังมาแรง (ไม่ต้องใช้ key)
+//   youtube        YouTube Data API v3: คลิป AI ยอดดูสูงในไทย (ต้องตั้ง secret YOUTUBE_API_KEY)
 type Deps = { env: (name: string) => string | undefined; fetch: typeof fetch; now?: () => number };
-type Source = { id: string; feed_url: string; kind: 'rss' | 'google_trends'; ai_only: boolean };
-export type TrendItem = { title: string; url: string; category: string; detail: string | null; published_at: string | null };
+type Kind = 'rss' | 'google_trends' | 'hf_models' | 'youtube';
+type Source = { id: string; feed_url: string; kind: Kind; ai_only: boolean };
+export type TrendItem = { title: string; url: string; category: string; detail: string | null; published_at: string | null; metric: number | null };
 
 const STUDIO = 'ladyploy';
 export const COOLDOWN_MS = 15 * 60000;
 const MAX_ITEMS_PER_SOURCE = 40;
 const RETENTION_DAYS = 120;
+const RUN_RETENTION_DAYS = 30;
+const NEW_MODEL_DAYS = 45;
+const CLIP_DAYS = 7;
 
 const AI = /(?:^|[^a-z])(?:ai|genai|llm|gpt)(?:[^a-z]|$)|ปัญญาประดิษฐ์|เอไอ|chatgpt|openai|gemini|claude|anthropic|copilot|midjourney|stable diffusion|dall-?e|firefly|sora|veo|runway|kling|perplexity|deepseek|grok|llama|notebooklm|machine learning|แมชชีนเลิร์นนิง/i;
+// A launch or version of a named model family; checked before the other categories.
+// The bare word "model" is too noisy (case studies, physics), so only named releases count.
+const MODEL = /โมเดล|gpt-?\d|o\d-(?:mini|pro)|gemini\s*\d|claude\s+\w+\s*\d|llama\s*\d|qwen|mistral|deepseek[- ]?[vr]\d|veo\s*\d|imagen\s*\d|sora\s*\d|grok\s*\d|kling\s*\d/i;
 const VIDEO = /วิดีโอ|วีดีโอ|คลิป|video|sora|veo|runway|kling|pika|hailuo|seedance/i;
 const IMAGE = /สร้างภาพ|รูปภาพ|ภาพวาด|ภาพ\s*ai|image|midjourney|dall-?e|firefly|stable diffusion|imagen|nano banana/i;
 const TOOLS = /เครื่องมือ|แอป|ฟีเจอร์|เปิดตัว|อัปเดต|อัพเดท|tool|app(?:[^a-z]|$)|feature|plugin|extension|chatgpt|gemini|claude|copilot|perplexity|notebooklm|cursor/i;
 
 export function isAiRelated(text: string): boolean { return AI.test(text); }
-export function categorize(text: string, kind: Source['kind']): string {
+export function categorize(text: string, kind: Kind): string {
   if (kind === 'google_trends') return 'search_trend';
+  if (kind === 'youtube') return 'video_clip';
+  if (kind === 'hf_models' || MODEL.test(text)) return 'new_model';
   if (VIDEO.test(text)) return 'video';
   if (IMAGE.test(text)) return 'image';
   if (TOOLS.test(text)) return 'ai_tools';
   return 'ai_news';
 }
+// "2,000+" -> 2000, "20K+" -> 20000, "1M+" -> 1000000
+export function parseTraffic(value: string): number | null {
+  const m = value.replace(/[,\s+]/g, '').match(/^(\d+(?:\.\d+)?)([km])?$/i);
+  if (!m) return null;
+  return Math.round(Number(m[1]) * (m[2] ? (m[2].toLowerCase() === 'k' ? 1e3 : 1e6) : 1));
+}
+const groupDigits = (n: number) => n.toLocaleString('en-US');
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
-function decode(raw: string): string {
+export function decode(raw: string): string {
   return raw
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
     .replace(/<[^>]*>/g, ' ')
@@ -67,11 +89,12 @@ export function parseFeed(xml: string, source: Pick<Source, 'kind' | 'ai_only'>)
   for (const block of blocks) {
     const title = tag(block, 'title').slice(0, 400);
     if (!title) continue;
-    let url: string | null, detail: string | null = null;
+    let url: string | null, detail: string | null = null, metric: number | null = null;
     if (source.kind === 'google_trends') {
       // The item <link> points back at the feed itself; link to the term on Google Trends.
       url = 'https://trends.google.com/trends/explore?geo=TH&q=' + encodeURIComponent(title);
       const traffic = tag(block, 'ht:approx_traffic'), news = tag(block, 'ht:news_item_title');
+      metric = parseTraffic(traffic);
       detail = [traffic && 'ปริมาณค้นหา ' + traffic, news && 'ข่าวที่เกี่ยวข้อง: ' + news].filter(Boolean).join(' · ').slice(0, 200) || null;
     } else {
       const atomLink = block.match(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/i)?.[1];
@@ -81,13 +104,70 @@ export function parseFeed(xml: string, source: Pick<Source, 'kind' | 'ai_only'>)
     if (!url || seen.has(url)) continue;
     seen.add(url);
     items.push({
-      title, url, detail,
+      title, url, detail, metric,
       category: categorize(title, source.kind),
       published_at: isoDate(tag(block, 'pubDate') || tag(block, 'dc:date') || tag(block, 'published') || tag(block, 'updated'))
     });
     if (items.length >= MAX_ITEMS_PER_SOURCE) break;
   }
   return items;
+}
+
+// Hugging Face trending models created recently ("โมเดลใหม่ที่มาแรง").
+export function parseHfModels(json: unknown, now: number): TrendItem[] {
+  if (!Array.isArray(json)) throw new Error('ข้อมูลจาก Hugging Face ไม่ถูกรูปแบบ');
+  const items: TrendItem[] = [];
+  for (const m of json) {
+    const id = typeof m?.id === 'string' ? m.id : '';
+    if (!/^[\w.-]{1,96}\/[\w.-]{1,96}$/.test(id)) continue;
+    // Skip re-packaged copies of the same model and safety-stripped variants.
+    if (/gguf|gptq|awq|mlx|[-_.](?:\d+bit|int\d|fp8|q\d)|uncensored|abliterated|nsfw/i.test(id)) continue;
+    const created = isoDate(String(m.createdAt || ''));
+    if (!created || now - Date.parse(created) > NEW_MODEL_DAYS * 86400000) continue;
+    const likes = Number(m.likes) || 0, downloads = Number(m.downloads) || 0;
+    items.push({
+      title: id, url: 'https://huggingface.co/' + id, category: 'new_model', published_at: created,
+      metric: Math.round(Number(m.trendingScore) || 0),
+      detail: [typeof m.pipeline_tag === 'string' ? m.pipeline_tag : 'โมเดล', 'ถูกใจ ' + groupDigits(likes), 'ดาวน์โหลด ' + groupDigits(downloads)].join(' · '),
+    });
+    if (items.length >= 20) break;
+  }
+  return items;
+}
+
+// YouTube: most-viewed AI videos in Thailand from the past week.
+async function fetchYoutube(deps: Deps, key: string, now: number): Promise<TrendItem[]> {
+  const search = new URL('https://www.googleapis.com/youtube/v3/search');
+  const params: Record<string, string> = { part: 'snippet', type: 'video', q: 'AI|ChatGPT|Gemini|ปัญญาประดิษฐ์|สอน AI',
+    regionCode: 'TH', relevanceLanguage: 'th', order: 'viewCount', safeSearch: 'moderate', maxResults: '25',
+    publishedAfter: new Date(now - CLIP_DAYS * 86400000).toISOString(), key };
+  Object.entries(params).forEach(([k, v]) => search.searchParams.set(k, v));
+  const youtubeError = async (r: Response) => {
+    const reason = (await r.json().catch(() => null))?.error?.errors?.[0]?.reason;
+    return new Error(reason === 'quotaExceeded' ? 'ใช้โควตา YouTube API ของวันนี้หมดแล้ว' : 'YouTube API ตอบกลับ HTTP ' + r.status + (reason ? ' (' + String(reason).slice(0, 40) + ')' : ''));
+  };
+  const found = await deps.fetch(search, { signal: AbortSignal.timeout(15000) });
+  if (!found.ok) throw await youtubeError(found);
+  const results = (await found.json())?.items;
+  if (!Array.isArray(results)) throw new Error('ข้อมูลจาก YouTube ไม่ถูกรูปแบบ');
+  const videos = results.filter(v => /^[\w-]{11}$/.test(v?.id?.videoId || ''));
+  if (!videos.length) return [];
+  const stats = new URL('https://www.googleapis.com/youtube/v3/videos');
+  stats.searchParams.set('part', 'statistics');
+  stats.searchParams.set('id', videos.map(v => v.id.videoId).join(','));
+  stats.searchParams.set('key', key);
+  const counted = await deps.fetch(stats, { signal: AbortSignal.timeout(15000) });
+  if (!counted.ok) throw await youtubeError(counted);
+  const views = new Map<string, number>(((await counted.json())?.items || []).map((v: any) => [v.id, Number(v.statistics?.viewCount) || 0]));
+  return videos.map(v => {
+    const count = views.get(v.id.videoId) ?? null;
+    return {
+      title: decode(String(v.snippet?.title || '')).slice(0, 400) || v.id.videoId,
+      url: 'https://www.youtube.com/watch?v=' + v.id.videoId, category: 'video_clip', metric: count,
+      published_at: isoDate(String(v.snippet?.publishedAt || '')),
+      detail: ['ช่อง ' + decode(String(v.snippet?.channelTitle || 'ไม่ระบุ')).slice(0, 80), count === null ? '' : 'ยอดดู ' + groupDigits(count)].filter(Boolean).join(' · '),
+    };
+  });
 }
 
 export function createHandler(deps: Deps) {
@@ -113,6 +193,23 @@ export function createHandler(deps: Deps) {
     async function rows(path: string) {
       const r = await api(path); if (!r.ok) throw new Error('database'); return await r.json();
     }
+    async function collect(source: Source): Promise<TrendItem[]> {
+      if (source.kind === 'youtube') {
+        const key = deps.env('YOUTUBE_API_KEY');
+        if (!key) throw new Error('ยังไม่ได้ตั้งค่า YOUTUBE_API_KEY');
+        return await fetchYoutube(deps, key, now);
+      }
+      const feedUrl = safeHttps(source.feed_url);
+      if (!feedUrl) throw new Error('ที่อยู่แหล่งข้อมูลไม่ใช่ https');
+      const response = await deps.fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+        Accept: source.kind === 'hf_models' ? 'application/json' : 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9' },
+        redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      if (!response.ok) throw new Error('แหล่งข่าวตอบกลับ HTTP ' + response.status);
+      if (source.kind === 'hf_models') return parseHfModels(await response.json(), now);
+      const text = (await response.text()).slice(0, 3_000_000);
+      if (!/<(rss|feed|rdf:RDF)\b/i.test(text)) throw new Error('ไม่ใช่รูปแบบ RSS/Atom');
+      return parseFeed(text, source);
+    }
     try {
       const last = await rows(`ai_trend_runs?studio_id=eq.${STUDIO}&select=started_at&order=started_at.desc&limit=1`);
       if (last[0] && now - Date.parse(last[0].started_at) < COOLDOWN_MS) return reply({ ok: true, skipped: true, lastRunAt: last[0].started_at });
@@ -121,18 +218,13 @@ export function createHandler(deps: Deps) {
       const results = await Promise.all(sources.map(async source => {
         let count = 0, error: string | null = null;
         try {
-          const feedUrl = safeHttps(source.feed_url);
-          if (!feedUrl) throw new Error('ที่อยู่ RSS ไม่ใช่ https');
-          const response = await deps.fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)', Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9' },
-            redirect: 'follow', signal: AbortSignal.timeout(15000) });
-          if (!response.ok) throw new Error('แหล่งข่าวตอบกลับ HTTP ' + response.status);
-          const text = (await response.text()).slice(0, 3_000_000);
-          if (!/<(rss|feed|rdf:RDF)\b/i.test(text)) throw new Error('ไม่ใช่รูปแบบ RSS/Atom');
-          const items = parseFeed(text, source);
+          const items = await collect(source);
           count = items.length;
           if (items.length) {
+            // merge-duplicates keeps view counts and trending scores current on later runs.
             const saved = await api('ai_trend_items?on_conflict=studio_id,source_id,url', 'POST',
-              items.map(i => ({ ...i, studio_id: STUDIO, source_id: source.id })), { Prefer: 'resolution=ignore-duplicates,return=minimal' });
+              items.map(i => ({ ...i, studio_id: STUDIO, source_id: source.id, fetched_at: new Date(now).toISOString() })),
+              { Prefer: 'resolution=merge-duplicates,return=minimal' });
             if (!saved.ok) throw new Error('บันทึกข่าวไม่สำเร็จ');
           }
         } catch (e) {
@@ -144,6 +236,7 @@ export function createHandler(deps: Deps) {
       }));
       const cutoff = new Date(now - RETENTION_DAYS * 86400000).toISOString();
       await api(`ai_trend_items?studio_id=eq.${STUDIO}&fetched_at=lt.${cutoff}`, 'DELETE');
+      await api(`ai_trend_runs?studio_id=eq.${STUDIO}&started_at=lt.${new Date(now - RUN_RETENTION_DAYS * 86400000).toISOString()}`, 'DELETE');
       return reply({ ok: true, results });
     } catch {
       return reply({ code: 'SERVICE_UNAVAILABLE' }, 503);

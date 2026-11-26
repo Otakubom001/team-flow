@@ -108,6 +108,24 @@ async function rejects(promise, pattern, label) {
   await rejects(asRole(db, 'service_role', "insert into ai_trend_items (source_id,title,url,category) values ('blognone','x','http://insecure.test','ai_news')"), /check constraint/, 'https only');
   assert.strictEqual((await asRole(db, 'anon', 'select studio_id from ai_trend_items')).rows[0].studio_id, 'ladyploy');
 
+  // 6. Trend sections migration: new sources, categories and metric; still read-only for the site.
+  const sections = fs.readFileSync(path.join(root, 'supabase/migrations/202611270002_trends_sections.sql'), 'utf8');
+  const sectionsRollback = fs.readFileSync(path.join(root, 'supabase/migrations/202611270002_trends_sections_rollback.sql'), 'utf8');
+  await db.exec(sections);
+  await db.exec(sections); // re-run safe
+  assert.strictEqual((await asRole(db, 'anon', 'select count(*)::int n from ai_trend_sources')).rows[0].n, 10);
+  assert.deepStrictEqual((await db.query("select id, kind, language from ai_trend_sources where language='en' order by id")).rows.map(r => r.id), ['google_ai', 'huggingface', 'openai']);
+  await asRole(db, 'service_role', "insert into ai_trend_items (source_id,title,url,category,metric) values ('huggingface','lab/m','https://huggingface.co/lab/m','new_model',1375),('youtube_th','คลิป','https://www.youtube.com/watch?v=abcdefghijk','video_clip',123456)");
+  await rejects(asRole(db, 'service_role', "insert into ai_trend_items (source_id,title,url,category,metric) values ('blognone','x','https://x.test/1','ai_news',-1)"), /check constraint/, 'metric >= 0');
+  await rejects(asRole(db, 'service_role', "insert into ai_trend_items (source_id,title,url,category) values ('blognone','x','https://x.test/2','gossip')"), /check constraint/, 'unknown category');
+  await rejects(asRole(db, 'anon', "update ai_trend_items set metric=0"), /permission denied/, 'anon update trend');
+  assert.strictEqual(JSON.stringify((await db.query("select * from contents where studio_id='enil' order by id")).rows), enilSnapshot, 'work untouched by trends migration');
+  await db.exec(sectionsRollback);
+  assert.strictEqual((await db.query('select count(*)::int n from ai_trend_sources')).rows[0].n, 6);
+  assert.strictEqual((await db.query("select count(*)::int n from ai_trend_items where category in ('new_model','video_clip')")).rows[0].n, 0);
+  assert.ok(!(await db.query("select column_name from information_schema.columns where table_name='ai_trend_items'")).rows.some(r => r.column_name === 'metric'));
+  await db.exec(sections); // apply again so the studios rollback below is tested with it present
+
   // Rollback refuses while Ladyploy owns data, then restores the original shape.
   await asRole(db, 'anon', "insert into contents (id,title,studio_id) values ('lp2','x','ladyploy')");
   await rejects(db.exec(rollback), /Studio อื่น/, 'rollback guard');
@@ -122,5 +140,5 @@ async function rejects(promise, pattern, label) {
   assert.strictEqual((await db.query("select to_regclass('public.studios') r")).rows[0].r, null);
 
   console.log('PASS: existing data stays in อีนิล unchanged, Ladyploy starts empty, scoped create/edit/delete, ' +
-    'studio lock, cross-studio event guard, legacy clients, read-only trend tables, re-run and guarded rollback');
+    'studio lock, cross-studio event guard, legacy clients, read-only trend tables, trend sections migration + rollback, re-run and guarded rollback');
 })().catch(e => { console.error('FAIL:', e.message); process.exit(1); });
