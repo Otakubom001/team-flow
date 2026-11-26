@@ -427,7 +427,8 @@ body {
     }
     </style>
     <link rel="stylesheet" href="midnight.css?v=1">
-    <script src="theme-init.js?v=1"></script>
+    <link rel="stylesheet" href="studios.css?v=1">
+    <script src="theme-init.js?v=2"></script>
 </head>
 <body>
     <!-- PIN Lock -->
@@ -470,9 +471,16 @@ body {
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <img class="studio-logo" src="assets/logo-midnight-silver.png" alt="อีนิล">
-                <span class="studio-word">STUDIO</span>
+                <img class="studio-logo" data-studio-only="enil" src="assets/logo-midnight-silver.png" alt="อีนิล">
+                <span class="studio-word" data-studio-only="enil">STUDIO</span>
+                <span class="studio-wordmark" data-studio-only="ladyploy">Ladyploy<span>.Studio</span></span>
             </div>
+            <div class="studio-switch" role="group" aria-label="เลือก Studio">
+                <span class="studio-switch-label">STUDIO</span>
+                <button type="button" class="studio-option" data-studio-choice="enil" aria-pressed="true">อีนิล</button>
+                <button type="button" class="studio-option" data-studio-choice="ladyploy" aria-pressed="false">Ladyploy.Studio</button>
+            </div>
+            <p class="studio-switch-note" id="studio-switch-note" hidden></p>
         </div>
         <nav class="sidebar-nav" aria-label="เมนูหลัก">
             <a href="#" class="nav-item active" data-page="dashboard">
@@ -487,14 +495,17 @@ body {
             <a href="#" class="nav-item" data-page="calendar">
                 <i class="fas fa-calendar-alt"></i><span>ปฏิทิน</span>
             </a>
-            <a href="#" class="nav-item" data-page="publish">
+            <a href="#" class="nav-item" data-page="trends" data-studio-only="ladyploy">
+                <i class="fas fa-bolt"></i><span>กระแส AI</span>
+            </a>
+            <a href="#" class="nav-item" data-page="publish" data-studio-only="enil">
                 <i class="fas fa-paper-plane"></i><span>เผยแพร่คอนเทนต์</span>
             </a>
         </nav>
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
             <i class="fas fa-moon"></i> <span>โหมดมืด</span>
         </button>
-        <div class="sidebar-team">
+        <div class="sidebar-team" data-studio-only="enil">
             <h4><i class="fas fa-users"></i> สมาชิกทีม</h4>
             <div class="team-member">
                 <div class="avatar" style="background:#FF6B6B">พ</div>
@@ -526,10 +537,20 @@ body {
         <!-- Mobile Header -->
         <div class="mobile-header">
             <button class="menu-toggle" id="menuToggle" aria-label="เปิดเมนู" aria-expanded="false" aria-controls="sidebar"><i class="fas fa-bars"></i></button>
-            <span class="mobile-title"><img src="assets/logo-midnight-silver.png" alt="อีนิล Studio"></span>
+            <span class="mobile-title"><img data-studio-only="enil" src="assets/logo-midnight-silver.png" alt="อีนิล Studio"><span class="studio-wordmark" data-studio-only="ladyploy">Ladyploy<span>.Studio</span></span></span>
+            <label class="studio-select-mobile"><span class="visually-hidden">เลือก Studio</span>
+                <select id="studio-select-mobile">
+                    <option value="enil">อีนิล</option>
+                    <option value="ladyploy">Ladyploy.Studio</option>
+                </select>
+            </label>
         </div>
 
-        <div class="studio-topbar"><span>Workspace <strong>/ ทีมอีนิล</strong></span><span class="studio-mark">CREATE WITH PURPOSE</span></div>
+        <div class="studio-topbar"><span>Workspace <strong id="studio-topbar-name">/ ทีมอีนิล</strong></span><span class="studio-mark" id="studio-mark">CREATE WITH PURPOSE</span></div>
+        <div class="studio-state" id="studio-state" role="status" aria-live="polite" hidden>
+            <span class="studio-state-text" id="studio-state-text"></span>
+            <button type="button" class="btn btn-sm" id="studio-state-retry" hidden>ลองโหลดอีกครั้ง</button>
+        </div>
 
         <!-- ==================== DASHBOARD ==================== -->
         <section class="page active" id="page-dashboard">
@@ -538,7 +559,8 @@ body {
                 <h1><i class="fas fa-th-large"></i> แดชบอร์ด</h1>
                 <p class="subtitle" id="dashboard-date"></p>
             </div>
-<div class="studio-hero"><div><div class="hero-eyebrow">LET’S MAKE IT HAPPEN</div><h2>ทุกเรื่องเล่า เริ่มต้นที่ทีมเรา</h2><p>รวมไอเดีย จัดการงาน และวางแผนโพสต์<br>ให้ทุกเรื่องราวพร้อมไปถึงคนดู</p><button class="hero-action" onclick="navigateTo('content')">เปิดพื้นที่เนื้อเรื่อง <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><img src="assets/logo-midnight-silver.png" alt="อีนิล — Midnight Studio"></div>
+<div class="studio-hero" data-studio-only="enil"><div><div class="hero-eyebrow">LET’S MAKE IT HAPPEN</div><h2>ทุกเรื่องเล่า เริ่มต้นที่ทีมเรา</h2><p>รวมไอเดีย จัดการงาน และวางแผนโพสต์<br>ให้ทุกเรื่องราวพร้อมไปถึงคนดู</p><button class="hero-action" onclick="navigateTo('content')">เปิดพื้นที่เนื้อเรื่อง <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><img src="assets/logo-midnight-silver.png" alt="อีนิล — Midnight Studio"></div>
+<div class="studio-hero lp-hero" data-studio-only="ladyploy"><div><div class="hero-eyebrow">AI CONTENT STUDIO</div><h2>สอน AI ให้เข้าใจง่าย ทั้งคลิปและภาพ</h2><p>รวมไอเดีย ติดตามงานผลิต และดูกระแส AI<br>ไว้ในพื้นที่เดียวของ Ladyploy</p><div class="lp-hero-actions"><button class="hero-action" onclick="navigateTo('content')">เปิดพื้นที่เนื้อเรื่อง <i class="fas fa-arrow-right" aria-hidden="true"></i></button><button class="hero-action" onclick="navigateTo('trends')">ดูกระแส AI <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div></div><div class="lp-hero-mark" aria-hidden="true">Ladyploy<span>.Studio</span></div></div>
 <div class="stats-grid">
     <button class="stat-card" id="stat-scheduled" style="--accent:#6C5CE7" onclick="showDashboardQueue('scheduled')"><i class="stat-icon fas fa-calendar-check"></i><span><strong class="stat-number">0</strong>ตั้งเวลาโพสต์แล้ว</span></button>
     <button class="stat-card" id="stat-posted" style="--accent:#16866E" onclick="showDashboardQueue('posted')"><i class="stat-icon fas fa-check-circle"></i><span><strong class="stat-number">0</strong>โพสต์แล้วทั้งหมด</span></button>
@@ -551,7 +573,7 @@ body {
                     <p class="pub-help">ยอดจากสถานะงานและการปักปฏิทิน • งานที่ปักไว้ไม่นับซ้ำเป็นโพสต์แล้ว • ไม่ใช่ผลยืนยันการเผยแพร่จาก Buffer</p>
                     <div id="recent-items" class="recent-list"></div><div class="pager" id="queue-pager"></div>
                 </div>
-                <div class="card">
+                <div class="card" data-studio-only="enil">
                     <h3><i class="fas fa-users"></i> งานของแต่ละคน</h3>
                     <div id="dashboard-workload"></div>
                 </div>
@@ -600,7 +622,7 @@ body {
                         <option value="making_clip">ทำคลิป AI</option>
                         <option value="making_image">ทำคอนเทนต์ภาพ</option>
                         </select>
-                    <select id="content-filter-member">
+                    <select id="content-filter-member" aria-label="กรองตามผู้รับผิดชอบ" data-studio-only="enil">
                         <option value="all">ทุกคน</option>
                         <option value="พลอย">พลอย</option>
                         <option value="บอม">บอม</option>
@@ -700,6 +722,26 @@ body {
                         <div id="cal-suggestions"></div>
                     </div>
                 </div>
+            </div>
+        </section>
+        <!-- ==================== AI TRENDS (Ladyploy) ==================== -->
+        <section class="page" id="page-trends" aria-labelledby="trends-heading">
+            <p class="page-kicker">AI TRENDS</p>
+            <div class="page-header">
+                <div><h1 id="trends-heading"><i class="fas fa-bolt"></i> กระแส AI</h1><p class="subtitle">หัวข้อข่าวและเทรนด์ภาษาไทยจากแหล่งที่ระบุไว้ด้านล่าง เปิดอ่านต้นฉบับก่อนนำไปทำคอนเทนต์ทุกครั้ง</p></div>
+                <button type="button" class="btn btn-primary" id="trends-refresh"><i class="fas fa-sync-alt" aria-hidden="true"></i> อัปเดตข่าว</button>
+            </div>
+            <p class="trends-message" id="trends-message" role="status" aria-live="polite"></p>
+            <div class="trends-layout">
+                <div class="trends-main">
+                    <div class="trends-filters" role="group" aria-label="กรองตามหมวด" id="trends-categories"></div>
+                    <div id="trends-list" class="trends-list"></div>
+                </div>
+                <aside class="card trends-sources" aria-labelledby="trends-sources-heading">
+                    <h3 id="trends-sources-heading"><i class="fas fa-rss" aria-hidden="true"></i> แหล่งข้อมูล</h3>
+                    <div id="trends-sources"></div>
+                    <p class="pub-help">ระบบดึงจาก RSS ของแต่ละแหล่งผ่านเซิร์ฟเวอร์ ไม่ใช้ AI สรุปหรือเขียนข่าวเอง • ข่าวจากแหล่งเทคโนโลยีทั่วไปเก็บเฉพาะหัวข้อที่พูดถึง AI • Google Trends แสดงคำค้นยอดนิยมในไทยทุกหมวด ไม่ได้คัดเฉพาะ AI</p>
+                </aside>
             </div>
         </section>
         <section class="page" id="page-publish" aria-labelledby="pub-heading">
@@ -811,7 +853,7 @@ body {
                         <label>ชื่อเรื่อง</label>
                         <input type="text" id="content-title" placeholder="ใส่ชื่อเรื่อง...">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" data-studio-only="enil">
                         <label>มอบหมายให้</label>
                         <select id="content-assigned">
                             <option value="พลอย">พลอย</option>
@@ -921,7 +963,7 @@ body {
                         <option value="posted">โพสต์แล้ว</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" data-studio-only="enil">
                     <label>มอบหมายให้</label>
                     <select id="new-assigned">
                         <option value="พลอย">พลอย</option>
@@ -1112,39 +1154,92 @@ function saveData(d) {
     dataCache = d;
 }
 
+// ===== Studios =====
+// Each studio owns its contents and events through the studio_id column
+// (supabase/migrations/202611270001_studios.sql). Access is still the shared PIN,
+// so the website key can technically read every studio: isolation here is about
+// never loading, showing or writing another studio's work by mistake.
+const STUDIOS = {
+    enil: { id: 'enil', name: 'อีนิล', topbar: 'ทีมอีนิล', mark: 'CREATE WITH PURPOSE',
+        members: ['พลอย', 'บอม', 'เพชร'], pages: ['dashboard', 'content', 'workflow', 'calendar', 'publish'] },
+    ladyploy: { id: 'ladyploy', name: 'Ladyploy.Studio', topbar: 'Ladyploy.Studio', mark: 'LEARN AI · CREATE BEAUTIFULLY',
+        members: [], pages: ['dashboard', 'content', 'workflow', 'calendar', 'trends'] }
+};
+const DEFAULT_STUDIO = 'enil';
+function readSavedStudio() {
+    try { const id = localStorage.getItem('teamflow_studio'); return STUDIOS[id] ? id : DEFAULT_STUDIO; }
+    catch (_) { return DEFAULT_STUDIO; }
+}
+let currentStudio = readSavedStudio();
+// null = not checked yet, false = database has no studios yet (only อีนิล exists), true = ready.
+let studiosEnabled = null;
+let studioLoadToken = 0;
+function studio() { return STUDIOS[currentStudio]; }
+// Rows written before the migration have no studio_id and belong to อีนิล.
+function rowStudio(row) { return row.studio_id || DEFAULT_STUDIO; }
+function scoped(query) { return studiosEnabled ? query.eq('studio_id', currentStudio) : query; }
+
+async function detectStudios() {
+    const result = await sb.from('studios').select('id');
+    if (!result.error) {
+        studiosEnabled = result.data.some(s => s.id === 'ladyploy');
+        return;
+    }
+    const missing = result.status === 404 || ['42P01', 'PGRST205'].includes(result.error.code);
+    if (!missing) throw new Error('ตรวจสอบรายการ Studio ไม่สำเร็จ กรุณาลองใหม่');
+    studiosEnabled = false;
+}
+
 async function fetchAllRows(table) {
     const rows = [];
     const size = 500;
     while (true) {
-        const result = await sb.from(table).select('*').order('id').range(rows.length, rows.length + size - 1);
+        const result = await scoped(sb.from(table).select('*')).order('id').range(rows.length, rows.length + size - 1);
         if (result.error) return result;
         rows.push(...result.data);
         if (result.data.length < size) return {data: rows};
     }
 }
+// Returns false when a newer studio switch made this load obsolete.
 async function syncFromSupabase() {
+    const token = ++studioLoadToken, loading = currentStudio;
     const [r1,r2] = await Promise.all(['contents','events'].map(fetchAllRows));
+    if (token !== studioLoadToken) return false;
     if(r1.error || r2.error) throw new Error('โหลดข้อมูลงานไม่สำเร็จ กรุณาลองใหม่');
+    // Defence in depth: never keep a row from another studio even if a filter was skipped.
+    const mine = row => rowStudio(row) === loading;
     originalRows.clear();
-    dataCache.contents = (r1.data || []).map(unpackContent);
-    dataCache.events = (r2.data || []).map(function(e) {
-        return { id: e.id, title: e.title, date: e.date, type: e.type, contentId: e.content_id, description: e.description };
+    dataCache.contents = (r1.data || []).filter(mine).map(unpackContent);
+    dataCache.events = (r2.data || []).filter(mine).map(function(e) {
+        return { id: e.id, title: e.title, date: e.date, type: e.type, contentId: e.content_id, description: e.description, studioId: rowStudio(e) };
     });
-    return dataCache;
+    return true;
 }
 
 async function deleteContent(id) {
-    await sb.from('contents').delete().eq('id', id);
-    await sb.from('events').delete().eq('content_id', id);
+    const removed = await scoped(sb.from('contents').delete().eq('id', id)).select('id');
+    if (removed.error) return false;
+    if (!removed.data.length) return 'missing';
+    const events = await scoped(sb.from('events').delete().eq('content_id', id));
+    if (events.error) showToast('ลบเนื้อเรื่องแล้ว แต่ลบกำหนดการที่ผูกไว้ไม่สำเร็จ กรุณาตรวจปฏิทิน');
+    dataCache.events = dataCache.events.filter(e => e.contentId !== id);
+    return true;
 }
 
 async function saveEvent(e) {
+    if (e.studioId && e.studioId !== currentStudio) { showToast('กำหนดการนี้เป็นของ Studio อื่น กรุณาโหลดหน้าใหม่'); return false; }
     var row = { id: e.id, title: e.title, date: e.date, type: e.type, content_id: e.contentId || null, description: e.description || '' };
-    await sb.from('events').upsert(row);
+    if (studiosEnabled) row.studio_id = currentStudio;
+    const { error } = await sb.from('events').upsert(row);
+    if (error) { showToast('บันทึกกำหนดการไม่สำเร็จ กรุณาลองอีกครั้ง'); return false; }
+    e.studioId = currentStudio;
+    return true;
 }
 
 async function deleteEvent(id) {
-    await sb.from('events').delete().eq('id', id);
+    const { error } = await scoped(sb.from('events').delete().eq('id', id));
+    if (error) { showToast('ลบกำหนดการไม่สำเร็จ กรุณาลองอีกครั้ง'); return false; }
+    return true;
 }
 
 async function getSetting(key) {
@@ -1281,11 +1376,91 @@ let quill = null;
 let currentCalMonth, currentCalYear, selectedCalDate;
 
 async function initApp() {
-    try {await syncFromSupabase();} catch(e){showToast(e.message);return;}
+    setStudioState('loading');
+    try { await detectStudios(); }
+    catch (e) { setStudioState('error', e.message); return; }
+    if (!studiosEnabled && currentStudio !== DEFAULT_STUDIO) setCurrentStudio(DEFAULT_STUDIO);
+    applyStudioChrome();
+    await loadStudioData();
+}
+
+async function loadStudioData() {
+    const loading = currentStudio;
+    dataReady = false;
+    setStudioState('loading');
+    try {
+        if (!await syncFromSupabase()) return; // superseded by a newer switch
+    } catch (e) {
+        if (loading === currentStudio) setStudioState('error', e.message);
+        return;
+    }
     data = loadData();
     dataReady = true;
-    renderDashboard();
+    setStudioState('ready');
+    navigateTo(activePage());
 }
+
+function setCurrentStudio(id) {
+    currentStudio = id;
+    document.documentElement.dataset.studio = id;
+    try { localStorage.setItem('teamflow_studio', id); } catch (_) { /* per-device convenience only */ }
+}
+
+async function switchStudio(id) {
+    if (!STUDIOS[id] || id === currentStudio) { applyStudioChrome(); return; }
+    if (!studiosEnabled) { applyStudioChrome(); showToast('ยังเปิดใช้ Ladyploy.Studio ไม่ได้ ต้องรัน migration ของ Studio ก่อน'); return; }
+    // Close editors so nothing typed for one studio is saved into the other.
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    setCurrentStudio(id);
+    dataCache = { contents: [], events: [] };
+    data = dataCache;
+    originalRows.clear(); checkedStories.clear(); expandedColumns.clear();
+    selectedCalDate = null; storyPage = 0; dashboardPage = 0;
+    byId('content-search').value = ''; byId('content-filter-member').value = 'all'; byId('content-filter-status').value = 'all';
+    if (window.TrendsPage) TrendsPage.reset();
+    applyStudioChrome();
+    // Show the (now empty) page right away so the previous studio's cards never linger,
+    // and leave pages this studio doesn't have (e.g. อีนิล's publishing page).
+    navigateTo(activePage());
+    await loadStudioData();
+    if (dataReady && currentStudio === id) showToast('เปลี่ยนเป็น ' + STUDIOS[id].name + ' แล้ว');
+}
+
+function activePage() {
+    const page = document.querySelector('.page.active')?.id.replace('page-', '') || 'dashboard';
+    return studio().pages.includes(page) ? page : 'dashboard';
+}
+function setStudioState(state, message) {
+    const box = byId('studio-state'), text = byId('studio-state-text'), retry = byId('studio-state-retry');
+    document.querySelector('.main-content').dataset.state = state;
+    box.hidden = state === 'ready';
+    box.dataset.kind = state;
+    retry.hidden = state !== 'error';
+    if (state === 'loading') text.textContent = 'กำลังโหลดข้อมูลของ ' + studio().name + '…';
+    if (state === 'error') text.textContent = (message || 'โหลดข้อมูลไม่สำเร็จ') + ' (' + studio().name + ')';
+}
+document.getElementById('studio-state-retry').onclick = () => { if (studiosEnabled === null) initApp(); else loadStudioData(); };
+
+function applyStudioChrome() {
+    const s = studio();
+    document.documentElement.dataset.studio = s.id;
+    document.title = (s.id === DEFAULT_STUDIO ? 'Team อีนิล' : s.name) + ' - จัดการงานทีม';
+    byId('studio-topbar-name').textContent = '/ ' + s.topbar;
+    byId('studio-mark').textContent = s.mark;
+    document.querySelectorAll('[data-studio-choice]').forEach(btn => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.studioChoice === s.id));
+        btn.disabled = studiosEnabled === false && btn.dataset.studioChoice !== DEFAULT_STUDIO;
+    });
+    const mobile = byId('studio-select-mobile');
+    mobile.value = s.id;
+    mobile.querySelector('option[value="ladyploy"]').disabled = studiosEnabled === false;
+    const note = byId('studio-switch-note');
+    note.hidden = studiosEnabled !== false;
+    note.textContent = 'Ladyploy.Studio จะใช้ได้หลังรัน migration ของ Studio ในฐานข้อมูล';
+}
+document.querySelectorAll('[data-studio-choice]').forEach(btn => btn.addEventListener('click', () => switchStudio(btn.dataset.studioChoice)));
+document.getElementById('studio-select-mobile').addEventListener('change', e => switchStudio(e.target.value));
 
 document.querySelectorAll('.nav-item').forEach(function(item) {
     item.addEventListener('click', function(e) {
@@ -1295,6 +1470,7 @@ document.querySelectorAll('.nav-item').forEach(function(item) {
 });
 
 function navigateTo(page) {
+    if (!studio().pages.includes(page)) page = 'dashboard';
     document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
     document.querySelector('.nav-item[data-page="' + page + '"]').classList.add('active');
     document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -1303,6 +1479,7 @@ function navigateTo(page) {
     if (page === 'content') renderContentList();
     if (page === 'workflow') renderKanban();
     if (page === 'calendar') renderCalendar();
+    if (page === 'trends' && window.TrendsPage) TrendsPage.render();
     setMenuOpen(false);
 }
 
@@ -1439,6 +1616,12 @@ window.openContentForEdit = function(id) {
     }
 };
 
+// Studios without a member list (Ladyploy) keep whatever was stored and never take
+// the hidden select's default value.
+function chosenAssignee(selectId, previous) {
+    return studio().members.length ? document.getElementById(selectId).value : (previous || null);
+}
+
 document.getElementById('btn-save-content').addEventListener('click', async function() {
     var id = document.getElementById('content-id').value;
     var title = document.getElementById('content-title').value.trim();
@@ -1451,7 +1634,7 @@ document.getElementById('btn-save-content').addEventListener('click', async func
         if (idx >= 0) {
             data.contents[idx].title = title;
             data.contents[idx].content = quill.root.innerHTML;
-            data.contents[idx].assignedTo = document.getElementById('content-assigned').value;
+            data.contents[idx].assignedTo = chosenAssignee('content-assigned', data.contents[idx].assignedTo);
             data.contents[idx].status = document.getElementById('content-status').value;
             data.contents[idx].postDate = document.getElementById('content-post-date').value;
             data.contents[idx].updatedAt = now;
@@ -1460,10 +1643,10 @@ document.getElementById('btn-save-content').addEventListener('click', async func
     } else {
         item = {
             id: genId(), title: title, content: quill.root.innerHTML,
-            assignedTo: document.getElementById('content-assigned').value,
+            assignedTo: chosenAssignee('content-assigned', null),
             status: document.getElementById('content-status').value,
             postDate: document.getElementById('content-post-date').value,
-            createdAt: now, updatedAt: now, voiced: false
+            createdAt: now, updatedAt: now, voiced: false, studioId: currentStudio
         };
         data.contents.push(item);
     }
@@ -1478,13 +1661,14 @@ document.getElementById('btn-delete-content').addEventListener('click', async fu
     var id = document.getElementById('content-id').value;
     if (!id) return;
     if (!confirm('ต้องการลบเนื้อเรื่องนี้?')) return;
+    const result = await deleteContent(id);
+    if (!result) { showToast('ลบเนื้อเรื่องไม่สำเร็จ กรุณาลองอีกครั้ง'); return; }
     data = loadData();
     data.contents = data.contents.filter(function(c) { return c.id !== id; });
     saveData(data);
-    await deleteContent(id);
     closeModal('modal-content');
     renderContentList();
-    showToast('ลบเนื้อเรื่องแล้ว');
+    showToast(result === 'missing' ? 'ไม่พบงานนี้ใน ' + studio().name + ' แล้ว (อาจถูกลบไปก่อนหน้า)' : 'ลบเนื้อเรื่องแล้ว');
 });
 
 document.getElementById('btn-cancel-content').addEventListener('click', function() { closeModal('modal-content'); });
@@ -1514,7 +1698,7 @@ function renderKanban() {
                 }
                 return '<div class="kanban-card" draggable="true" data-id="' + c.id + '" ondblclick="openContentForEdit(\'' + c.id + '\')">' +
                     '<div class="kc-title">' + esc(c.title) + '</div>' +
-                    '<div class="kc-meta"><div class="kc-avatar" style="background:' + color + '">' + initial + '</div>' +
+                    '<div class="kc-meta">' + (studio().members.length ? '<div class="kc-avatar" style="background:' + color + '">' + esc(initial) + '</div>' : '') +
                     '<span>' + (c.postDate ? formatDateShort(c.postDate) : '') + '</span></div>' +
                     kanbanBadge +
                     '<div class="kc-actions"><button onclick="event.stopPropagation();openContentForEdit(\'' + c.id + '\')">' +
@@ -1561,7 +1745,7 @@ document.getElementById('btn-save-status').addEventListener('click', async funct
     var content = data.contents.find(function(c) { return c.id === id; });
     if (content) {
         content.status = document.getElementById('new-status').value;
-        content.assignedTo = document.getElementById('new-assigned').value;
+        content.assignedTo = chosenAssignee('new-assigned', content.assignedTo);
         content.updatedAt = new Date().toISOString();
         saveData(data);
         if(!await saveContent(content)) return;
@@ -1870,28 +2054,18 @@ document.getElementById('btn-save-event').addEventListener('click', async functi
     if (!title) { showToast('กรุณาใส่ชื่อกำหนดการ'); return; }
     if (!date) { showToast('กรุณาเลือกวันที่'); return; }
     data = loadData();
-    var item;
-    if (id) {
-        var idx = data.events.findIndex(function(e) { return e.id === id; });
-        if (idx >= 0) {
-            data.events[idx].title = title;
-            data.events[idx].date = date;
-            data.events[idx].type = document.getElementById('event-type').value;
-            data.events[idx].contentId = document.getElementById('event-content-link').value;
-            data.events[idx].description = document.getElementById('event-description').value;
-            item = data.events[idx];
-        }
-    } else {
-        item = {
-            id: genId(), title: title, date: date,
-            type: document.getElementById('event-type').value,
-            contentId: document.getElementById('event-content-link').value,
-            description: document.getElementById('event-description').value
-        };
-        data.events.push(item);
-    }
+    var existing = id ? data.events.find(function(e) { return e.id === id; }) : null;
+    if (id && !existing) { showToast('ไม่พบกำหนดการนี้ กรุณาโหลดหน้าใหม่'); return; }
+    var item = {
+        id: id || genId(), title: title, date: date,
+        type: document.getElementById('event-type').value,
+        contentId: document.getElementById('event-content-link').value,
+        description: document.getElementById('event-description').value,
+        studioId: existing ? existing.studioId : currentStudio
+    };
+    if (!await saveEvent(item)) return;
+    if (existing) Object.assign(existing, item); else data.events.push(item);
     saveData(data);
-    await saveEvent(item);
     closeModal('modal-event');
     renderCalendar();
     showToast(id ? 'บันทึกเรียบร้อย' : 'เพิ่มกำหนดการแล้ว');
@@ -1901,10 +2075,10 @@ document.getElementById('btn-delete-event').addEventListener('click', async func
     var id = document.getElementById('event-id').value;
     if (!id) return;
     if (!confirm('ต้องการลบกำหนดการนี้?')) return;
+    if (!await deleteEvent(id)) return;
     data = loadData();
     data.events = data.events.filter(function(e) { return e.id !== id; });
     saveData(data);
-    await deleteEvent(id);
     closeModal('modal-event');
     renderCalendar();
     showToast('ลบกำหนดการแล้ว');
@@ -1965,7 +2139,7 @@ function showDashboardQueue(view, page = 0) {
     dashboardPage = Math.max(0, Math.min(page, Math.ceil(rows.length/5)-1));
     byId('queue-heading').textContent = dashboardViews[view][0];
     byId('recent-items').innerHTML = rows.slice(dashboardPage*5,dashboardPage*5+5).map(c =>
-        '<button class="queue-row" onclick="openContentForEdit(\''+safeId(c.id)+'\')"><b>'+esc(c.title)+'</b><span>'+esc(c.assignedTo || 'ยังไม่ระบุ')+' · '+esc(c.postDate ? formatDateShort(c.postDate) : 'ยังไม่เลือกวัน')+'</span></button>'
+        '<button class="queue-row" onclick="openContentForEdit(\''+safeId(c.id)+'\')"><b>'+esc(c.title)+'</b><span>'+(studio().members.length ? esc(c.assignedTo || 'ยังไม่ระบุ')+' · ' : '')+esc(c.postDate ? formatDateShort(c.postDate) : 'ยังไม่เลือกวัน')+'</span></button>'
     ).join('') || '<div class="empty-state">ไม่มีงานในรายการนี้</div>';
     pager('queue-pager',dashboardPage,rows.length,5,p => showDashboardQueue(view,p));
 }
@@ -1997,14 +2171,14 @@ function renderContentList() {
     const contents=loadData().contents;
     for(const tab of ['active','ready','archive']) byId('tab-count-'+tab).textContent=contents.filter(c=>storyTab(c)===tab).length;
     const search=byId('content-search').value.trim().toLocaleLowerCase();
-    const status=byId('content-filter-status'), member=byId('content-filter-member').value;
+    const status=byId('content-filter-status'), member=studio().members.length ? byId('content-filter-member').value : 'all';
     status.hidden=currentContentTab!=='active';
     const rows=contents.filter(c=>storyTab(c)===currentContentTab && c.title.toLocaleLowerCase().includes(search)
         && (member==='all'||c.assignedTo===member) && (status.hidden||status.value==='all'||c.status===status.value))
         .sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)) || a.id.localeCompare(b.id));
     storyPage=Math.max(0,Math.min(storyPage,Math.ceil(rows.length/10)-1));
-    byId('content-list').innerHTML=rows.length ? '<div class="story-line story-head"><span>เรื่อง</span><span>ผู้รับผิดชอบ</span><span>สถานะ</span><span>วันโพสต์</span></div>'+rows.slice(storyPage*10,storyPage*10+10).map(c=>
-        '<div class="story-line"><button class="story-title" onclick="openContentForEdit(\''+safeId(c.id)+'\')">'+esc(c.title)+'</button><span>'+esc(c.assignedTo || '—')+'</span><span class="row-status"><span class="status-badge status-'+safeId(c.status)+'">'+esc(STATUS_LABELS[c.status]||c.status)+'</span>'+
+    byId('content-list').innerHTML=rows.length ? '<div class="story-line story-head"><span>เรื่อง</span><span class="story-owner">ผู้รับผิดชอบ</span><span>สถานะ</span><span>วันโพสต์</span></div>'+rows.slice(storyPage*10,storyPage*10+10).map(c=>
+        '<div class="story-line"><button class="story-title" onclick="openContentForEdit(\''+safeId(c.id)+'\')">'+esc(c.title)+'</button><span class="story-owner">'+esc(c.assignedTo || '—')+'</span><span class="row-status"><span class="status-badge status-'+safeId(c.status)+'">'+esc(STATUS_LABELS[c.status]||c.status)+'</span>'+
         (c.status==='making_image'?'':'<button class="voice-chip" onclick="toggleVoice(\''+safeId(c.id)+'\',event)">'+(c.voiced?'พากย์แล้ว':'ยังไม่พากย์')+'</button>')+'</span><span>'+esc(c.postDate?formatDateShort(c.postDate):'—')+'</span></div>'
     ).join('') : '<div class="empty-state">ไม่พบเนื้อเรื่อง</div>';
     pager('story-pager',storyPage,rows.length,10,p=>{storyPage=p;renderContentList();});
@@ -2019,7 +2193,7 @@ function unpackContent(row) {
     const body=row.content||'', metadata=body.match(metaPattern);
     return {id:row.id,title:row.title,content:metadata?body.slice(metadata[0].length):body,
         assignedTo:row.assigned_to,status:row.status,postDate:row.post_date,createdAt:row.created_at,
-        updatedAt:row.updated_at,voiced:!!row.voiced,rank:metadata?.[1] || legacyRank(row),
+        updatedAt:row.updated_at,voiced:!!row.voiced,studioId:rowStudio(row),rank:metadata?.[1] || legacyRank(row),
         postedAt:metadata?Number(metadata[2]):(row.status==='posted'?Date.parse(row.updated_at || row.created_at)||0:0),
         calendarPreviousStatus:metadata?.[3] || null};
 }
@@ -2058,16 +2232,19 @@ function restoreCalendarStatus(c, fallbackStatus) {
     c.calendarPreviousStatus = null;
 }
 async function saveContent(c) {
+    if (!c.studioId) c.studioId = currentStudio;
+    if (c.studioId !== currentStudio) { showToast('งานนี้เป็นของ Studio อื่น กรุณาโหลดหน้าใหม่'); return false; }
     const old=originalRows.get(c.id);
     if (c.calendarPreviousStatus === undefined) c.calendarPreviousStatus = old ? unpackContent(old).calendarPreviousStatus : null;
     if (c.status !== 'posted') c.calendarPreviousStatus = null;
     if(!c.rank || (old && c.status!==old.status && c.rank===unpackContent(old).rank)) setQueuePosition(c,c.status);
     const returnStatus = c.calendarPreviousStatus ? ' '+c.calendarPreviousStatus : '';
     const row={id:c.id,title:c.title,content:'<!--teamflow-queue:v1 '+c.rank+' '+(c.postedAt||0)+returnStatus+'-->'+(c.content||''),
-        assigned_to:c.assignedTo,status:c.status,post_date:c.postDate||null,created_at:c.createdAt,updated_at:c.updatedAt,voiced:!!c.voiced};
+        assigned_to:c.assignedTo||null,status:c.status,post_date:c.postDate||null,created_at:c.createdAt,updated_at:c.updatedAt,voiced:!!c.voiced};
+    if(studiosEnabled) row.studio_id=c.studioId;
     let q;
     if(old) {
-        q=sb.from('contents').update(row).eq('id',c.id);
+        q=scoped(sb.from('contents').update(row).eq('id',c.id));
         q=old.updated_at?q.eq('updated_at',old.updated_at):q.is('updated_at',null);
     } else q=sb.from('contents').insert(row);
     const {data:saved,error}=await q.select().maybeSingle();
@@ -2185,9 +2362,11 @@ byId('picker-save').onclick=async function(){
 };
 
 setInterval(()=>{if(dataReady && byId('page-workflow').classList.contains('active') && !document.querySelector('.dragging'))renderKanban();},60000);
+applyStudioChrome();
 renderDashboard();
 initCalendar();
     </script>
+    <script src="trends.js?v=1"></script>
     <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
     <script src="buffer-client.js?v=4"></script>

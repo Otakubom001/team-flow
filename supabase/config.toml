@@ -6,6 +6,11 @@ verify_jwt = false
 [functions.buffer-check]
 verify_jwt = false
 
+# Called by the website with its public anon key (a JWT). Writes use the
+# service role inside the function; the response only reports fetch results.
+[functions.ai-trends]
+verify_jwt = true
+
 # Dashboard deployed name; reuse the same audited publishing handler.
 [functions.smooth-responder]
 verify_jwt = false

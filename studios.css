@@ -1,0 +1,207 @@
+/* Studio switching, shared states, the "กระแส AI" page and the Ladyploy.Studio theme.
+   อีนิล keeps the Midnight design from midnight.css; nothing here applies to it except
+   the switcher and loading/error banner. */
+
+/* ---- Show only the active studio's parts ---------------------------------- */
+html[data-studio="enil"] [data-studio-only="ladyploy"],
+html[data-studio="ladyploy"] [data-studio-only="enil"] { display: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---- Studio switcher -------------------------------------------------------- */
+.studio-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; padding: 5px; border: 1px solid var(--studio-switch-border, #293a4d); border-radius: 10px; background: var(--studio-switch-bg, #101925); }
+.studio-switch-label { width: 100%; padding: 2px 6px 0; font-size: 9px; letter-spacing: 2px; color: var(--studio-switch-label, #8297af); }
+.studio-option { flex: 1 1 auto; min-height: 36px; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--studio-option-text, #b2c4d6); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.studio-option:hover:not(:disabled) { background: var(--studio-option-hover, #152233); }
+.studio-option[aria-pressed="true"] { background: var(--studio-option-active-bg, #65dfff); color: var(--studio-option-active-text, #06202e); }
+.studio-option:disabled { opacity: .45; cursor: not-allowed; }
+.studio-switch-note { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--studio-switch-label, #8297af); }
+.studio-wordmark { font-size: 20px; font-weight: 700; letter-spacing: -.3px; color: var(--lp-cocoa, #4a2e25); white-space: nowrap; }
+.studio-wordmark span { color: var(--primary); font-weight: 600; }
+.studio-select-mobile { margin-left: auto; }
+.studio-select-mobile select { min-height: 38px; max-width: 46vw; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; }
+.mobile-title .studio-wordmark { font-size: 17px; }
+
+/* ---- Loading / error banner ------------------------------------------------- */
+.studio-state { display: flex; align-items: center; gap: 12px; margin: -12px 0 20px; padding: 12px 16px; border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: 10px; background: var(--card-bg); font-size: 13px; }
+.studio-state[hidden] { display: none; }
+.studio-state[data-kind="loading"] .studio-state-text::before { content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 10px; vertical-align: -1px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: studio-spin .8s linear infinite; }
+.studio-state[data-kind="error"] { border-left-color: var(--danger); }
+.studio-state .btn { margin-left: auto; }
+.main-content[data-state="loading"] .page.active { opacity: .45; pointer-events: none; transition: opacity .15s; }
+@keyframes studio-spin { to { transform: rotate(360deg); } }
+
+/* ---- กระแส AI ----------------------------------------------------------------- */
+.trends-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.trends-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.trend-chip { min-height: 36px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.trend-chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #fff); }
+.trends-list { display: flex; flex-direction: column; gap: 12px; }
+.trend-card { padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); }
+.trend-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--text-secondary); }
+.trend-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--primary) 12%, var(--card-bg)); color: var(--primary); }
+.trend-badge[data-category="search_trend"] { background: color-mix(in srgb, var(--info) 18%, var(--card-bg)); color: var(--text); }
+.trend-title { font-size: 15px; font-weight: 600; line-height: 1.55; margin-bottom: 6px; overflow-wrap: anywhere; }
+.trend-detail { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; overflow-wrap: anywhere; }
+.trend-meta { font-size: 11px; color: var(--text-secondary); }
+.trend-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.trend-actions .btn { text-decoration: none; display: inline-flex; align-items: center; min-height: 34px; }
+.trend-broken { font-size: 12px; color: var(--danger); align-self: center; }
+.trends-empty { padding: 28px 20px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; background: var(--card-bg); }
+.trends-empty strong { display: block; font-size: 15px; margin-bottom: 6px; }
+.trends-empty p { font-size: 13px; color: var(--text-secondary); max-width: 520px; margin: 0 auto; }
+.trends-message { min-height: 1.2em; margin: -10px 0 14px; font-size: 13px; color: var(--text-secondary); }
+.trends-sources { position: sticky; top: 16px; }
+.trend-source { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.trend-source:last-child { border-bottom: 0; }
+.trend-source-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.trend-source-status { font-size: 11px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.trend-source-status[data-kind="ok"]::before { content: '● '; color: var(--success); }
+.trend-source-status[data-kind="fail"]::before { content: '● '; color: var(--danger); }
+.trend-source-status[data-kind="off"]::before { content: '○ '; }
+.trend-source-note { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+@media (max-width: 1024px) {
+    .trends-layout { grid-template-columns: 1fr; }
+    .trends-sources { position: static; }
+}
+
+/* ============================================================================
+   Ladyploy.Studio theme
+   ชั่วคราว: โทนจากคำบรรยาย (ชมพูพีชอ่อน คอรัล น้ำตาลโกโก้ ขาวครีม) รอภาพอ้างอิงแล้วปรับเฉพาะตัวแปรด้านล่าง
+   ทุกคู่สีข้อความผ่านเกณฑ์ WCAG AA 4.5:1
+   ============================================================================ */
+html[data-studio="ladyploy"] {
+    --lp-cocoa: #3e2a24;
+    --lp-coral: #b8503c;      /* text/buttons: 4.9:1 on white */
+    --lp-coral-soft: #f08c74; /* decoration only */
+    --lp-peach: #f9ddd1;
+    --lp-cream: #fcf4ef;
+    --bg: var(--lp-cream);
+    --card-bg: #ffffff;
+    /* own names: midnight.css re-declares --sidebar-* on .sidebar itself */
+    --lp-sidebar-bg: #fbe9e1;
+    --lp-sidebar-text: #6b4a40;
+    --lp-sidebar-active: #ffffff;
+    --text: var(--lp-cocoa);
+    --text-secondary: #74564b;
+    --border: #eed8cd;
+    --primary: var(--lp-coral);
+    --primary-hover: #9e4232;
+    --on-primary: #ffffff;
+    --danger: #b3261e;
+    --success: #2e7d5b;
+    --warning: #9a6a1f;
+    --info: #5b7fa6;
+    --shadow: 0 4px 18px #7a3e2a0f;
+    --shadow-lg: 0 20px 60px #4a2e2524;
+    --studio-switch-bg: #ffffff;
+    --studio-switch-border: #eed8cd;
+    --studio-switch-label: #8a675b;
+    --studio-option-text: #6b4a40;
+    --studio-option-hover: #fbe9e1;
+    --studio-option-active-bg: var(--lp-coral);
+    --studio-option-active-text: #ffffff;
+    color-scheme: light;
+}
+html[data-studio="ladyploy"][data-theme="dark"] {
+    --lp-cocoa: #f7e9e2;
+    --lp-coral: #f4a48e;
+    --bg: #1c1411;
+    --card-bg: #261b17;
+    --lp-sidebar-bg: #201713;
+    --lp-sidebar-text: #d2b8ac;
+    --lp-sidebar-active: #33241e;
+    --text: #f7e9e2;
+    --text-secondary: #c9afa3;
+    --border: #3f2e27;
+    --primary: var(--lp-coral);
+    --primary-hover: #f8c1b1;
+    --on-primary: #3a1c13;
+    --danger: #f2948b;
+    --success: #86d3ad;
+    --warning: #e7bd7d;
+    --info: #9cbcdf;
+    --studio-switch-bg: #261b17;
+    --studio-switch-border: #3f2e27;
+    --studio-switch-label: #b49488;
+    --studio-option-text: #d2b8ac;
+    --studio-option-hover: #33241e;
+    --studio-option-active-text: #3a1c13;
+    color-scheme: dark;
+}
+
+/* Sidebar (midnight.css hard-codes the dark navy palette) */
+html[data-studio="ladyploy"] .sidebar { background: var(--lp-sidebar-bg); border-right-color: var(--border); color: var(--lp-sidebar-text);
+    --sidebar-bg: var(--lp-sidebar-bg); --sidebar-text: var(--lp-sidebar-text); }
+html[data-studio="ladyploy"] .sidebar :is(.sidebar-header, .sidebar-team) { border-color: var(--border); }
+html[data-studio="ladyploy"] .sidebar-nav::before { color: var(--studio-switch-label); }
+html[data-studio="ladyploy"] .sidebar .nav-item { color: var(--lp-sidebar-text); }
+html[data-studio="ladyploy"] .sidebar .nav-item:hover { background: color-mix(in srgb, var(--primary) 9%, var(--lp-sidebar-bg)); color: var(--text); }
+html[data-studio="ladyploy"] .sidebar .nav-item.active { background: var(--lp-sidebar-active); color: var(--primary); box-shadow: inset 3px 0 var(--primary); }
+html[data-studio="ladyploy"] .sidebar .theme-toggle { background: var(--card-bg); color: var(--lp-sidebar-text); border-color: var(--border); }
+html[data-studio="ladyploy"] .stats-grid button[aria-pressed="true"] { outline-color: var(--primary); }
+html[data-studio="ladyploy"] .sidebar .theme-toggle:hover { background: var(--primary); color: var(--on-primary); }
+html[data-studio="ladyploy"] .logo { color: var(--text); }
+
+/* Topbar, headings, buttons */
+html[data-studio="ladyploy"] .studio-topbar .studio-mark,
+html[data-studio="ladyploy"] .page-kicker { color: var(--primary); }
+html[data-studio="ladyploy"] .btn-primary,
+html[data-studio="ladyploy"] .pin-btn { background: var(--primary); color: var(--on-primary); }
+html[data-studio="ladyploy"] .btn-primary:hover,
+html[data-studio="ladyploy"] .pin-btn:hover { background: var(--primary-hover); box-shadow: 0 5px 18px #b8503c26; }
+html[data-studio="ladyploy"] .menu-toggle { color: var(--text); }
+
+/* Dashboard hero: calm, readable, no busy imagery */
+html[data-studio="ladyploy"] .lp-hero { background: linear-gradient(120deg, var(--lp-peach), var(--card-bg) 75%); border-color: var(--border); color: var(--text); }
+html[data-studio="ladyploy"][data-theme="dark"] .lp-hero { background: linear-gradient(120deg, #3a2620, var(--card-bg) 75%); }
+html[data-studio="ladyploy"] .lp-hero .hero-eyebrow { color: var(--primary); }
+html[data-studio="ladyploy"] .lp-hero .hero-eyebrow::before { background: var(--lp-coral-soft); box-shadow: none; }
+html[data-studio="ladyploy"] .lp-hero p { color: var(--text-secondary); }
+html[data-studio="ladyploy"] .lp-hero .hero-action { color: var(--primary); font-weight: 600; }
+.lp-hero-actions { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+.lp-hero-mark { justify-self: center; font-size: clamp(26px, 4vw, 46px); font-weight: 700; letter-spacing: -1px; color: var(--text); }
+.lp-hero-mark span { color: var(--primary); }
+
+/* Dashboard, lists and boards */
+html[data-studio="ladyploy"] .upcoming-item .up-date { background: color-mix(in srgb, var(--primary) 14%, var(--card-bg)); color: var(--primary); }
+html[data-studio="ladyploy"] .content-tab.active .tab-count { background: color-mix(in srgb, var(--primary) 18%, var(--card-bg)); color: var(--primary); }
+html[data-studio="ladyploy"] .stat-card:hover { border-color: var(--primary); }
+html[data-studio="ladyploy"] .story-line { grid-template-columns: minmax(0, 2.6fr) minmax(110px, 1.2fr) minmax(82px, 1fr); }
+html[data-studio="ladyploy"] .story-owner { display: none; }
+@media (max-width: 768px) { html[data-studio="ladyploy"] .story-line:not(.story-head) { grid-template-columns: 1fr auto; } }
+
+/* Calendar */
+html[data-studio="ladyploy"] .cal-day:hover { background: color-mix(in srgb, var(--primary) 6%, var(--card-bg)); }
+html[data-studio="ladyploy"] .cal-day.today { background: color-mix(in srgb, var(--primary) 10%, var(--card-bg)); }
+html[data-studio="ladyploy"] .cal-day.selected { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
+html[data-studio="ladyploy"] .cal-day.has-content,
+html[data-studio="ladyploy"] .cal-day.has-holiday,
+html[data-studio="ladyploy"] .cal-day.has-event,
+html[data-studio="ladyploy"] .cal-day.has-content.has-holiday { background: color-mix(in srgb, var(--lp-peach) 45%, var(--card-bg)); }
+html[data-studio="ladyploy"][data-theme="dark"] :is(.cal-day.has-content, .cal-day.has-holiday, .cal-day.has-event, .cal-day.has-content.has-holiday) { background: #2e211c; }
+html[data-studio="ladyploy"] .cal-day.today .day-number { background: var(--primary); color: var(--on-primary); }
+html[data-studio="ladyploy"] .cal-day.other-month { color: color-mix(in srgb, var(--text-secondary) 55%, var(--card-bg)); }
+html[data-studio="ladyploy"] .cal-event-dot.type-content { background: #b8503c; color: #fff; }
+html[data-studio="ladyploy"] .cal-event-dot.type-content-image { background: #8e3f63; color: #fff; }
+html[data-studio="ladyploy"] .cal-event-dot.type-holiday,
+html[data-studio="ladyploy"] .cal-event-dot.type-important { background: #7d5a17; color: #fff; }
+html[data-studio="ladyploy"] .cal-event-dot.type-post_schedule { background: #2e6b52; color: #fff; }
+html[data-studio="ladyploy"] :is(.sug-desc-box, .de-desc-box) { background: var(--bg); border-color: var(--border); color: var(--text); }
+
+/* Dark mode surfaces that index.html/midnight.css hard-code in navy */
+html[data-studio="ladyploy"][data-theme="dark"] :is(.status-waiting_clip, .status-making_clip, .status-making_image, .status-ready, .status-posted) { background: #33241e; }
+html[data-studio="ladyploy"][data-theme="dark"] .toast { background: #33241e; color: var(--text); border: 1px solid var(--border); }
+html[data-studio="ladyploy"][data-theme="dark"] .ql-toolbar.ql-snow,
+html[data-studio="ladyploy"][data-theme="dark"] .ql-snow .ql-picker-options,
+html[data-studio="ladyploy"][data-theme="dark"] .ql-snow .ql-tooltip { background: #2e211c; border-color: var(--border); }
+html[data-studio="ladyploy"][data-theme="dark"] .ql-container.ql-snow { background: #1f1612; border-color: var(--border); }
+
+/* PIN screen remembers the last studio used on this device */
+html[data-studio="ladyploy"] .pin-overlay { background: radial-gradient(ellipse at 50% 35%, var(--lp-peach), var(--lp-cream) 70%); }
+html[data-studio="ladyploy"][data-theme="dark"] .pin-overlay { background: radial-gradient(ellipse at 50% 35%, #3a2620, #1c1411 70%); }
+html[data-studio="ladyploy"] .pin-box { background: var(--card-bg); border-color: var(--border); color: var(--text); box-shadow: var(--shadow-lg); }
+html[data-studio="ladyploy"] .pin-box p,
+html[data-studio="ladyploy"] .pin-confirm-label { color: var(--text-secondary); }
+html[data-studio="ladyploy"] :is(.pin-input, .pin-confirm-row) input { background: var(--bg); border-color: var(--border); color: var(--text); }
+html[data-studio="ladyploy"] :is(.pin-input, .pin-confirm-row) input:focus { border-color: var(--primary); }
+html[data-studio="ladyploy"] .pin-error { color: var(--danger); }

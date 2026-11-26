@@ -19,7 +19,9 @@ async function roundTrip(status) {
             stored = {...pending}; return {data: stored, error: null};
         }
     };
+    // Studio helpers as on a database without the studios migration (อีนิล only).
     const ctx = vm.createContext({originalRows: new Map(), sb: {from: () => query},
+        currentStudio: 'enil', studiosEnabled: false, rowStudio: r => r.studio_id || 'enil', scoped: q => q,
         STATUS_LABELS: {waiting_clip: 'Waiting', making_clip: 'Clip', making_image: 'Image', ready: 'Ready', posted: 'Posted'},
         loadData: () => ({contents: []}), genId: () => 'test', showToast() {}});
     vm.runInContext(code, ctx);
