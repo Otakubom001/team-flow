@@ -11,6 +11,11 @@ verify_jwt = false
 [functions.ai-trends]
 verify_jwt = true
 
+# Dashboard deployed name for the ai-trends handler; the website calls this name.
+[functions.dynamic-function]
+verify_jwt = true
+entrypoint = "./functions/ai-trends/index.ts"
+
 # Dashboard deployed name; reuse the same audited publishing handler.
 [functions.smooth-responder]
 verify_jwt = false

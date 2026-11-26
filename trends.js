@@ -5,6 +5,8 @@
 (function (root) {
     'use strict';
     const STUDIO_ID = 'ladyploy';
+    // Name the Dashboard gave the deployed copy of supabase/functions/ai-trends/index.ts.
+    const TRENDS_FUNCTION = 'dynamic-function';
     const CATEGORIES = {
         all: 'ทั้งหมด',
         ai_tools: 'เครื่องมือ AI',
@@ -204,7 +206,7 @@
         refreshing = true; draw();
         message('กำลังดึงข่าวจากแหล่งข้อมูล อาจใช้เวลาสักครู่…');
         try {
-            const { data, error } = await sb.functions.invoke('ai-trends', { body: { action: 'refresh' } });
+            const { data, error } = await sb.functions.invoke(TRENDS_FUNCTION, { body: { action: 'refresh' } });
             if (error) {
                 const status = error.context && error.context.status;
                 message(status === 404 ? 'ยังไม่ได้ติดตั้งฟังก์ชัน ai-trends ใน Supabase จึงดึงข่าวไม่ได้' : 'ดึงข่าวไม่สำเร็จ กรุณาลองใหม่ภายหลัง');

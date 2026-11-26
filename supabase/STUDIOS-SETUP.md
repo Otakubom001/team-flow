@@ -33,6 +33,10 @@ select tablename, policyname, cmd, roles from pg_policies
 
 ## 3. ติดตั้งฟังก์ชันดึงข่าว `ai-trends`
 
+> ติดตั้งแล้ว (2026-11-27): Dashboard ตั้งชื่อฟังก์ชันเป็น `dynamic-function`
+> หน้าเว็บเรียกชื่อนี้ (`TRENDS_FUNCTION` ใน `trends.js`) เมื่อแก้โค้ดให้อัปเดตฟังก์ชันเดิม
+> ด้วย `functions/ai-trends/index.ts` แล้วกด Deploy updates อย่าสร้างฟังก์ชันใหม่ซ้ำ
+
 1. Edge Functions → Deploy a new function → Via Editor
 2. ตั้งชื่อ `ai-trends` เก็บชื่อไฟล์ `index.ts` วางโค้ดจาก `functions/ai-trends/index.ts` → Deploy
 3. Settings ของฟังก์ชัน: เปิด **Verify JWT** ไว้ (ค่าเริ่มต้น) หน้าเว็บเรียกด้วย anon key ซึ่งเป็น JWT
