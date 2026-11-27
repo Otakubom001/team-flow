@@ -20,7 +20,7 @@ const REAL_URL = 'https://axaebqeezpgbvvkivnqn.supabase.co';
 
 const BASELINE = `
 create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
-create table contents (id text primary key, title text, content text, assigned_to text, status text,
+create table contents (id text primary key, title text, content text, assigned_to text not null, status text,
   post_date text, created_at text, updated_at text, voiced boolean default false);
 create table events (id text primary key, title text, date text, type text, content_id text, description text);
 create table settings (key text primary key, value text);

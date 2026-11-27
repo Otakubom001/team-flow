@@ -2242,7 +2242,8 @@ async function saveContent(c) {
     if(!c.rank || (old && c.status!==old.status && c.rank===unpackContent(old).rank)) setQueuePosition(c,c.status);
     const returnStatus = c.calendarPreviousStatus ? ' '+c.calendarPreviousStatus : '';
     const row={id:c.id,title:c.title,content:'<!--teamflow-queue:v1 '+c.rank+' '+(c.postedAt||0)+returnStatus+'-->'+(c.content||''),
-        assigned_to:c.assignedTo||null,status:c.status,post_date:c.postDate||null,created_at:c.createdAt,updated_at:c.updatedAt,voiced:!!c.voiced};
+        // assigned_to is NOT NULL in production; studios without members store ''.
+        assigned_to:c.assignedTo||'',status:c.status,post_date:c.postDate||null,created_at:c.createdAt,updated_at:c.updatedAt,voiced:!!c.voiced};
     if(studiosEnabled) row.studio_id=c.studioId;
     let q;
     if(old) {
@@ -2368,7 +2369,7 @@ applyStudioChrome();
 renderDashboard();
 initCalendar();
     </script>
-    <script src="trends.js?v=3"></script>
+    <script src="trends.js?v=4"></script>
     <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
     <script src="buffer-client.js?v=4"></script>
