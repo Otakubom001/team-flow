@@ -126,6 +126,44 @@ async function rejects(promise, pattern, label) {
   assert.ok(!(await db.query("select column_name from information_schema.columns where table_name='ai_trend_items'")).rows.some(r => r.column_name === 'metric'));
   await db.exec(sections); // apply again so the studios rollback below is tested with it present
 
+  // 7. Idea board: new table only, per-studio notes, studio lock, same-studio story link.
+  const ideas = fs.readFileSync(path.join(root, 'supabase/migrations/202611280001_idea_board.sql'), 'utf8');
+  const ideasRollback = fs.readFileSync(path.join(root, 'supabase/migrations/202611280001_idea_board_rollback.sql'), 'utf8');
+  const allWork = async () => JSON.stringify([(await db.query('select * from contents order by id')).rows, (await db.query('select * from events order by id')).rows]);
+  const workBefore = await allWork();
+  await db.exec(ideas);
+  await db.exec(ideas); // re-run safe
+  assert.strictEqual(await allWork(), workBefore, 'idea board migration leaves stories and events untouched');
+  await asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,color,plan_month) values ('note1','enil','คลิปปีใหม่','pink','2026-12'),('note2','ladyploy','สอน Gemini','blue',null)");
+  await asRole(db, 'anon', "update idea_notes set plan_month='2027-01', content_id='old1' where id='note1' and studio_id='enil'");
+  const n1 = (await db.query("select * from idea_notes where id='note1'")).rows[0];
+  assert.strictEqual(n1.plan_month, '2027-01');
+  assert.ok(n1.updated_at >= n1.created_at, 'updated_at touched');
+  await rejects(asRole(db, 'anon', "update idea_notes set studio_id='ladyploy' where id='note1'"), /เปลี่ยนไม่ได้/, 'move note');
+  await rejects(asRole(db, 'anon', "update idea_notes set content_id='old1' where id='note2'"), /Studio เดียวกัน/, 'cross-studio link');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body) values ('note3','nope','x')"), /foreign key/, 'unknown studio');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body) values ('note4','enil','   ')"), /check constraint/, 'empty body');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,color) values ('note5','enil','x','red')"), /check constraint/, 'unknown color');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,plan_month) values ('note6','enil','x','2026-13')"), /check constraint/, 'bad month');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,source_url) values ('note7','enil','x','http://x.test')"), /check constraint/, 'https only');
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id) values ('note8','enil')"), /null value/, 'body required');
+  await asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,source_url) values ('trend1','ladyploy','ข่าว','https://news.test/1')");
+  await rejects(asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,source_url) values ('trend2','ladyploy','ซ้ำ','https://news.test/1')"), /duplicate key/, 'same headline twice');
+  await asRole(db, 'anon', "insert into idea_notes (id,studio_id,body,source_url) values ('trend3','enil','อีก studio','https://news.test/1')");
+  // A story deleted later leaves its note editable.
+  await db.query("insert into contents (id,title,studio_id) values ('tmp1','x','ladyploy')");
+  await asRole(db, 'anon', "update idea_notes set content_id='tmp1' where id='note2'");
+  await db.query("delete from contents where id='tmp1'");
+  await asRole(db, 'anon', "update idea_notes set color='green' where id='note2'");
+  // Rollback refuses while notes exist, then removes only the board.
+  await rejects(db.exec(ideasRollback), /ยังมีโพสต์อิท/, 'idea rollback guard');
+  await db.exec('rollback');
+  assert.ok((await db.query("select to_regclass('public.idea_notes') r")).rows[0].r, 'guard keeps the board');
+  await db.query('delete from idea_notes');
+  await db.exec(ideasRollback);
+  assert.strictEqual((await db.query("select to_regclass('public.idea_notes') r")).rows[0].r, null);
+  assert.strictEqual(await allWork(), workBefore, 'idea rollback leaves stories and events untouched');
+
   // Rollback refuses while Ladyploy owns data, then restores the original shape.
   await asRole(db, 'anon', "insert into contents (id,title,studio_id) values ('lp2','x','ladyploy')");
   await rejects(db.exec(rollback), /Studio อื่น/, 'rollback guard');
@@ -140,5 +178,6 @@ async function rejects(promise, pattern, label) {
   assert.strictEqual((await db.query("select to_regclass('public.studios') r")).rows[0].r, null);
 
   console.log('PASS: existing data stays in อีนิล unchanged, Ladyploy starts empty, scoped create/edit/delete, ' +
-    'studio lock, cross-studio event guard, legacy clients, read-only trend tables, trend sections migration + rollback, re-run and guarded rollback');
+    'studio lock, cross-studio event guard, legacy clients, read-only trend tables, trend sections migration + rollback, ' +
+    'idea board (per-studio notes, locks, link guard, unique headline, guarded rollback), re-run and guarded rollback');
 })().catch(e => { console.error('FAIL:', e.message); process.exit(1); });

@@ -76,6 +76,22 @@ select tablename, policyname, cmd, roles from pg_policies
 ย้อนกลับ: `select cron.unschedule('ladyploy-ai-trends');` แล้วรัน `202611270002_trends_sections_rollback.sql`
 และคืนโค้ดฟังก์ชันเป็นเวอร์ชันก่อนหน้า
 
+## 3.2 กระดานไอเดีย (ทั้งอีนิลและ Ladyploy)
+
+SQL Editor → New query → วาง `migrations/202611280001_idea_board.sql` → Run
+ผลที่ควรได้: `Success. No rows returned`
+
+- สร้างตารางใหม่ `idea_notes` ตารางเดียว ไม่แก้ `contents`, `events` หรือ `settings`
+- แต่ละ Studio เห็นเฉพาะโพสต์อิทของตัวเอง ย้ายโพสต์อิทข้าม Studio ไม่ได้
+- ปุ่ม "+ ไอเดีย" ในหน้ากระแส AI จะเปลี่ยนจากสร้างเนื้อเรื่องทันที เป็นแปะไว้ในกองไอเดีย (สีฟ้า พร้อมลิงก์ต้นฉบับ)
+- ก่อนรันไฟล์นี้ หน้ากระดานไอเดียจะขึ้นว่า "ยังไม่ได้ติดตั้ง" ส่วนอื่นใช้งานได้ตามปกติ
+
+ตรวจผล: `select count(*) from idea_notes;` ต้องได้ 0
+
+ย้อนกลับ: วาง `migrations/202611280001_idea_board_rollback.sql` → Run
+ถ้ามีโพสต์อิทอยู่ สคริปต์จะหยุดเองโดยไม่ลบอะไร (export ตาราง `idea_notes` ก่อน แล้วค่อยลบเอง)
+เนื้อเรื่องที่สร้างจากโพสต์อิทไปแล้วอยู่ในตาราง `contents` ไม่ถูกลบ
+
 ## 4. Deploy หน้าเว็บ
 
 อัปโหลด/commit ไฟล์ `index.html`, `theme-init.js`, `studios.css`, `trends.js` ขึ้น GitHub Pages
@@ -108,6 +124,7 @@ SQL Editor → วาง `migrations/202611270001_studios_rollback.sql` → Run
 ```
 node tests/studios-migration.cjs      # migration บน Postgres จริง (PGlite)
 node tests/trends-page.cjs
+node tests/ideas-board.cjs
 node tests/calendar-status.cjs
 deno test tests/ai-trends.test.ts
 node tests/fake-supabase.cjs 8090     # เปิดเว็บกับฐานข้อมูลจำลองที่ http://localhost:8090 (PIN ทดสอบ 1234)

@@ -9,7 +9,7 @@
     <meta http-equiv="Expires" content="0">
     <title>Team อีนิล - จัดการงานทีม</title>
     <link rel="stylesheet" href="publish.css?v=3">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Mali:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -428,6 +428,7 @@ body {
     </style>
     <link rel="stylesheet" href="midnight.css?v=1">
     <link rel="stylesheet" href="studios.css?v=2">
+    <link rel="stylesheet" href="ideas.css?v=1">
     <script src="theme-init.js?v=2"></script>
 </head>
 <body>
@@ -488,6 +489,9 @@ body {
             </a>
             <a href="#" class="nav-item" data-page="content">
                 <i class="fas fa-file-alt"></i><span>เนื้อเรื่อง</span>
+            </a>
+            <a href="#" class="nav-item" data-page="ideas">
+                <i class="fas fa-thumbtack"></i><span>กระดานไอเดีย</span>
             </a>
             <a href="#" class="nav-item" data-page="workflow">
                 <i class="fas fa-columns"></i><span>สถานะงาน</span>
@@ -580,6 +584,10 @@ body {
                 <div class="card">
                     <h3><i class="fas fa-microphone"></i> สถานะพากย์เสียง</h3>
                     <div id="dashboard-voice"></div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-thumbtack"></i> แผนเดือนนี้</h3>
+                    <div id="dashboard-ideas"></div>
                 </div>
                 <div class="card">
                     <h3><i class="fas fa-calendar-day"></i> โพสต์ที่จะถึง</h3>
@@ -724,6 +732,25 @@ body {
                 </div>
             </div>
         </section>
+        <!-- ==================== IDEA BOARD ==================== -->
+        <section class="page" id="page-ideas" aria-labelledby="ideas-heading">
+            <p class="page-kicker">IDEA BOARD</p>
+            <div class="page-header">
+                <div><h1 id="ideas-heading"><i class="fas fa-thumbtack"></i> กระดานไอเดีย</h1><p class="subtitle">แปะไอเดียไว้ก่อน แล้วลากไปวางในเดือนที่จะทำ เมื่อพร้อมกด “สร้างงาน” เพื่อเปลี่ยนเป็นเนื้อเรื่อง</p></div>
+                <button type="button" class="btn btn-primary" id="idea-add"><i class="fas fa-plus" aria-hidden="true"></i> แปะไอเดีย</button>
+            </div>
+            <div class="idea-toolbar">
+                <span class="idea-hint">ลากกระดาษไปแปะเดือนที่จะทำ · กดที่กระดาษเพื่อแก้ไขหรือย้ายเดือน</span>
+                <div class="idea-months" role="group" aria-label="เลือกช่วงเดือน">
+                    <button type="button" class="btn btn-icon" id="idea-prev" aria-label="เดือนก่อนหน้า"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                    <span id="idea-range" aria-live="polite"></span>
+                    <button type="button" class="btn btn-icon" id="idea-next" aria-label="เดือนถัดไป"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm" id="idea-today">เดือนนี้</button>
+                </div>
+            </div>
+            <p class="trends-message" id="ideas-message" role="status" aria-live="polite"></p>
+            <div class="idea-board" id="idea-board"></div>
+        </section>
         <!-- ==================== AI TRENDS (Ladyploy) ==================== -->
         <section class="page" id="page-trends" aria-labelledby="trends-heading">
             <p class="page-kicker">AI TRENDS</p>
@@ -833,6 +860,26 @@ body {
     <!-- ==================== MODALS ==================== -->
 
     <!-- Content Editor Modal -->
+    <dialog id="idea-dialog" aria-labelledby="idea-dialog-title">
+        <h3 id="idea-dialog-title">แปะไอเดียใหม่</h3>
+        <div class="idea-preview" id="idea-preview" aria-hidden="true"></div>
+        <label for="idea-body">ไอเดีย</label>
+        <textarea id="idea-body" rows="3" maxlength="500" placeholder="ทำคลิปเทียบ AI สร้างเพลง 3 ตัว"></textarea>
+        <span class="idea-field-label" id="idea-colors-label">สีกระดาษ</span>
+        <div class="idea-swatches" id="idea-colors" role="group" aria-labelledby="idea-colors-label"></div>
+        <label for="idea-tag">แท็ก (ไม่บังคับ)</label>
+        <input id="idea-tag" maxlength="40" placeholder="#เทศกาล">
+        <label for="idea-month">แปะไว้ที่</label>
+        <select id="idea-month"></select>
+        <a id="idea-source" class="idea-source" target="_blank" rel="noopener noreferrer" hidden>เปิดลิงก์ต้นฉบับ ↗</a>
+        <p id="idea-error" class="idea-error" role="alert"></p>
+        <footer>
+            <button type="button" class="btn btn-sm idea-delete" id="idea-delete" hidden>เอาออก</button>
+            <button type="button" class="btn btn-secondary" id="idea-task" hidden>สร้างงาน →</button>
+            <button type="button" class="btn btn-secondary" id="idea-cancel">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="idea-save">แปะเลย</button>
+        </footer>
+    </dialog>
     <dialog id="picker-panel" aria-labelledby="picker-heading">
         <h3 id="picker-heading">เพิ่มงานลงวันที่ <span id="picker-date"></span></h3>
         <p>งานที่เพิ่มจะเปลี่ยนสถานะเป็น “โพสต์แล้ว” ทันที</p>
@@ -1163,9 +1210,9 @@ function saveData(d) {
 // never loading, showing or writing another studio's work by mistake.
 const STUDIOS = {
     enil: { id: 'enil', name: 'อีนิล', topbar: 'ทีมอีนิล', mark: 'CREATE WITH PURPOSE',
-        members: ['พลอย', 'บอม', 'เพชร'], pages: ['dashboard', 'content', 'workflow', 'calendar', 'publish'] },
+        members: ['พลอย', 'บอม', 'เพชร'], pages: ['dashboard', 'content', 'ideas', 'workflow', 'calendar', 'publish'] },
     ladyploy: { id: 'ladyploy', name: 'Ladyploy.Studio', topbar: 'Ladyploy.Studio', mark: 'LEARN AI · CREATE BEAUTIFULLY',
-        members: [], pages: ['dashboard', 'content', 'workflow', 'calendar', 'trends'] }
+        members: [], pages: ['dashboard', 'content', 'ideas', 'workflow', 'calendar', 'trends'] }
 };
 const DEFAULT_STUDIO = 'enil';
 function readSavedStudio() {
@@ -1421,6 +1468,7 @@ async function switchStudio(id) {
     selectedCalDate = null; storyPage = 0; dashboardPage = 0;
     byId('content-search').value = ''; byId('content-filter-member').value = 'all'; byId('content-filter-status').value = 'all';
     if (window.TrendsPage) TrendsPage.reset();
+    if (window.IdeasPage) IdeasPage.reset();
     applyStudioChrome();
     // Show the (now empty) page right away so the previous studio's cards never linger,
     // and leave pages this studio doesn't have (e.g. อีนิล's publishing page).
@@ -1482,6 +1530,7 @@ function navigateTo(page) {
     if (page === 'workflow') renderKanban();
     if (page === 'calendar') renderCalendar();
     if (page === 'trends' && window.TrendsPage) TrendsPage.render();
+    if (page === 'ideas' && window.IdeasPage) IdeasPage.render();
     setMenuOpen(false);
 }
 
@@ -1505,6 +1554,8 @@ function renderDashboard() {
     document.getElementById('dashboard-date').textContent =
         'วัน' + dayNames[now.getDay()] + 'ที่ ' + now.getDate() + ' ' + THAI_MONTHS[now.getMonth()] + ' ' + (now.getFullYear() + 543);
     showDashboardQueue(dashboardView,dashboardPage);
+    // Only once data has loaded: before login there is no PIN yet and nothing to query.
+    if (dataReady && window.IdeasPage) IdeasPage.renderDashboard();
     var today = localDay();
     var upcoming = data.contents
         .filter(function(c) { return c.postDate >= today && isCalendarScheduled(c); })
@@ -2369,7 +2420,8 @@ applyStudioChrome();
 renderDashboard();
 initCalendar();
     </script>
-    <script src="trends.js?v=4"></script>
+    <script src="ideas.js?v=1"></script>
+    <script src="trends.js?v=5"></script>
     <script src="publish-rules.js?v=2"></script>
     <script src="publisher-storage.js?v=1"></script>
     <script src="buffer-client.js?v=4"></script>

@@ -118,7 +118,9 @@
             sb.from('ai_trend_items').select('*')
                 .eq('studio_id', STUDIO_ID).order('fetched_at', { ascending: false }).limit(400),
             sb.from('ai_trend_runs').select('source_id,started_at,finished_at,ok,item_count,error')
-                .eq('studio_id', STUDIO_ID).order('started_at', { ascending: false }).limit(120)
+                .eq('studio_id', STUDIO_ID).order('started_at', { ascending: false }).limit(120),
+            // So "+ ไอเดีย" knows which headlines are already pinned on the idea board.
+            root.IdeasPage ? root.IdeasPage.ensureLoaded().catch(() => {}) : null
         ]);
         if (token !== loadToken) return;
         const failed = [sources, items, runs].find(r => r.error);
@@ -138,9 +140,11 @@
         const url = safeUrl(item.url);
         const save = el('button', 'btn btn-sm btn-secondary' + (small ? ' trend-save-small' : ''));
         save.type = 'button';
-        const saved = isSavedIdea(root.loadData().contents, item.url);
-        save.textContent = saved ? (small ? 'บันทึกแล้ว' : 'บันทึกเป็นไอเดียแล้ว') : (small ? '+ ไอเดีย' : 'บันทึกเป็นไอเดีย');
-        save.setAttribute('aria-label', (saved ? 'บันทึกแล้ว: ' : 'บันทึกเป็นไอเดีย: ') + item.title);
+        const board = boardReady();
+        const saved = isSavedIdea(root.loadData().contents, item.url) || (board && root.IdeasPage.hasSource(item.url));
+        const full = board ? 'แปะในกระดานไอเดีย' : 'บันทึกเป็นไอเดีย';
+        save.textContent = saved ? (small ? 'บันทึกแล้ว' : full + 'แล้ว') : (small ? '+ ไอเดีย' : full);
+        save.setAttribute('aria-label', (saved ? 'บันทึกแล้ว: ' : full + ': ') + item.title);
         save.disabled = saved || !url || !root.dataReady;
         save.onclick = () => saveIdea(item, sourceName, save);
         return save;
@@ -295,10 +299,19 @@
         $('trends-refresh').disabled = refreshing || state.status === 'not_installed';
     }
 
+    // Ideas go to the idea board's pile when it is installed; otherwise (before its
+    // migration) they become a story, as before.
+    function boardReady() { return !!(root.IdeasPage && root.IdeasPage.available()); }
+
     async function saveIdea(item, sourceName, button) {
         if (currentStudio !== STUDIO_ID || !root.dataReady) return;
         if (isSavedIdea(root.loadData().contents, item.url)) { button.disabled = true; return; }
         button.disabled = true;
+        if (boardReady()) {
+            if (await root.IdeasPage.addFromTrend(item, 'กระแส AI · ' + sourceName)) draw();
+            else button.disabled = false;
+            return;
+        }
         const now = new Date().toISOString();
         const idea = {
             id: root.genId(), title: String(item.title).slice(0, 200), content: ideaHtml(item, sourceName),

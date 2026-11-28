@@ -1,0 +1,106 @@
+/* กระดานไอเดีย: cork board with taped paper post-its (both studios). */
+#page-ideas,#idea-dialog,.idea-popover{
+  --cork:#c89a64;--cork-dot:#a97a46;--cork-dot2:#dcb27e;--frame:#8a5a2e;--frame-edge:#6e4422;
+  --paper-ink:#3b2a1e;
+  --n-yellow:#fff1a8;--n-pink:#ffc9d6;--n-blue:#c6e6ff;--n-green:#cdeec0;--n-orange:#ffd3a8;--n-purple:#e1d3ff;--n-white:#fbf7ee;
+  --paper-font:'Mali','Noto Sans Thai',cursive
+}
+/* Ladyploy: softer peach-cork with a cocoa frame. */
+[data-studio="ladyploy"] #page-ideas{--cork:#e2b994;--cork-dot:#c9976c;--cork-dot2:#f0cfae;--frame:#7a4b3a;--frame-edge:#5c3528}
+
+[data-color="yellow"]{--paper:var(--n-yellow)}[data-color="pink"]{--paper:var(--n-pink)}[data-color="blue"]{--paper:var(--n-blue)}
+[data-color="green"]{--paper:var(--n-green)}[data-color="orange"]{--paper:var(--n-orange)}[data-color="purple"]{--paper:var(--n-purple)}[data-color="white"]{--paper:var(--n-white)}
+
+.idea-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.idea-hint{font-size:13px;color:var(--text-secondary,#7a6250)}
+.idea-months{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:600}
+
+.idea-board{
+  position:relative;border-radius:14px;padding:22px 18px 30px;min-height:540px;
+  background-color:var(--cork);
+  background-image:radial-gradient(var(--cork-dot) 1.2px,transparent 1.6px),radial-gradient(var(--cork-dot2) 1px,transparent 1.4px),radial-gradient(var(--cork-dot) .8px,transparent 1.2px);
+  background-size:9px 9px,13px 13px,7px 7px;background-position:0 0,4px 6px,2px 3px;
+  box-shadow:inset 0 0 0 10px var(--frame),inset 0 0 0 12px var(--frame-edge),inset 0 6px 18px rgba(0,0,0,.25),0 8px 24px rgba(60,35,15,.25);
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;color:var(--paper-ink)
+}
+.idea-board[data-state]:not([data-state="ready"]){display:flex;align-items:center;justify-content:center}
+.idea-board-state{font-family:var(--paper-font);font-size:17px;background:#fffdf6;padding:16px 22px;max-width:520px;text-align:center;transform:rotate(-1deg);box-shadow:0 4px 10px rgba(0,0,0,.25)}
+
+.idea-lane{position:relative;padding:60px 6px 10px;border-radius:8px;min-width:0;transition:background .15s}
+.idea-lane.is-over{background:rgba(255,248,230,.3)}
+.idea-lane+.idea-lane::before{content:"";position:absolute;left:-10px;top:16px;bottom:10px;border-left:2px dashed rgba(70,40,15,.25)}
+
+/* Torn-paper month label with a red pin. */
+.idea-label{
+  position:absolute;top:6px;left:50%;transform:translateX(-50%) rotate(-1.5deg);margin:0;
+  background:#fffdf6;color:var(--paper-ink);padding:7px 16px 9px;font:600 16px var(--paper-font);white-space:nowrap;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));
+  clip-path:polygon(0 4%,6% 0,14% 5%,24% 1%,35% 4%,47% 0,58% 5%,70% 1%,82% 4%,92% 0,100% 5%,98% 50%,100% 96%,90% 100%,79% 95%,67% 100%,55% 96%,43% 100%,31% 95%,19% 100%,8% 96%,0 100%,2% 50%)
+}
+.idea-lane:nth-child(even) .idea-label{transform:translateX(-50%) rotate(1.2deg)}
+.idea-lane.is-pile .idea-label{background:#f3e6cf}
+.idea-label small{font:400 12px 'Noto Sans Thai',sans-serif;color:#7a6250;margin-left:6px}
+.idea-pin{position:absolute;top:1px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff8a7a,#c0392b 60%,#7d1f15)}
+.idea-empty{font-family:var(--paper-font);color:rgba(52,32,18,.78);text-align:center;padding-top:40px;font-size:15px}
+
+/* Post-it */
+.idea-note-wrap{position:relative;margin:0 auto 24px;width:92%}
+.idea-note-wrap.is-dragging{opacity:.45}
+.idea-note{
+  display:flex;flex-direction:column;gap:6px;width:100%;min-height:120px;padding:22px 14px 32px;border:0;text-align:left;
+  background:var(--paper,var(--n-yellow));color:var(--paper-ink);font:400 16px/1.45 var(--paper-font);cursor:grab;
+  transform:rotate(var(--r,0deg));
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.28));
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%);
+  transition:transform .15s
+}
+.idea-note::after{content:"";position:absolute;right:0;bottom:0;width:18px;height:18px;background:linear-gradient(135deg,rgba(0,0,0,.2) 0 50%,transparent 50%),var(--paper,var(--n-yellow));filter:brightness(.86)}
+.idea-note:hover,.idea-note:focus-visible{transform:rotate(var(--r,0deg)) translateY(-2px) scale(1.02)}
+.idea-note:focus-visible{outline:3px solid #3b2a1e;outline-offset:3px}
+.idea-note-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.idea-note-tag{font:400 12px 'Noto Sans Thai',sans-serif;color:rgba(59,42,30,.75)}
+.idea-note-done{font:600 12px 'Noto Sans Thai',sans-serif;color:#2f6b2a}
+.idea-tape{position:absolute;top:-9px;left:50%;width:74px;height:22px;margin-left:-37px;transform:rotate(var(--tr,-3deg));z-index:2;pointer-events:none;
+  background:rgba(255,252,235,.62);clip-path:polygon(3% 0,97% 4%,100% 22%,96% 45%,100% 70%,97% 100%,4% 96%,0 75%,3% 50%,0 25%)}
+.idea-tools{position:absolute;right:22px;bottom:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.idea-note-wrap:hover .idea-tools,.idea-note-wrap:focus-within .idea-tools{opacity:1}
+.idea-tools button{font:400 12px 'Noto Sans Thai',sans-serif;border:0;background:rgba(255,255,255,.72);color:var(--paper-ink);border-radius:999px;padding:3px 9px;cursor:pointer}
+.idea-tools button:disabled{opacity:.5;cursor:default}
+
+/* Color swatches (popover and editor) */
+.idea-swatches,.idea-popover{display:flex;gap:8px;flex-wrap:wrap}
+.idea-swatch{width:32px;height:32px;border:0;border-radius:3px;cursor:pointer;background:var(--paper);box-shadow:0 2px 4px rgba(0,0,0,.22);transform:rotate(-4deg)}
+.idea-swatch:nth-child(even){transform:rotate(3deg)}
+.idea-swatch[aria-pressed="true"]{outline:3px solid var(--text,#3b2a1e);outline-offset:2px}
+.idea-popover{position:absolute;z-index:1000;background:#fffaf2;border-radius:10px;padding:10px;max-width:290px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+
+/* Editor dialog */
+#idea-dialog{margin:auto;width:min(440px,94vw);max-height:92dvh;border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--card-bg);color:var(--text);box-shadow:var(--shadow-lg)}
+#idea-dialog[open]{display:flex;flex-direction:column;gap:8px}
+#idea-dialog::backdrop{background:rgba(40,25,12,.48)}
+#idea-dialog h3{margin:0}
+#idea-dialog label,.idea-field-label{font-size:13px;color:var(--text-secondary,inherit);margin-top:4px}
+#idea-dialog textarea,#idea-dialog input,#idea-dialog select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)}
+#idea-dialog footer{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
+#idea-dialog .idea-delete{margin-right:auto;color:#c0392b}
+.idea-preview{align-self:center;width:210px;min-height:120px;margin:6px 0 10px;padding:20px 14px;background:var(--paper);color:var(--paper-ink);font:400 16px/1.45 var(--paper-font);white-space:pre-wrap;overflow-wrap:anywhere;transform:rotate(-2deg);
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.28));clip-path:polygon(0 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%)}
+.idea-error{color:#c0392b;font-size:13px;min-height:1em;margin:0}
+.idea-source{font-size:13px}
+
+/* Dashboard card */
+.idea-dash-sum{margin:0 0 10px;font-size:14px}
+.idea-dash-notes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.idea-dash-note{background:var(--paper);color:#3b2a1e;font:400 14px 'Mali','Noto Sans Thai',cursive;padding:8px 10px;max-width:100%;transform:rotate(-1deg);box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.idea-dash-note:nth-child(even){transform:rotate(1.2deg)}
+#page-dashboard .idea-dash-note{--n-yellow:#fff1a8;--n-pink:#ffc9d6;--n-blue:#c6e6ff;--n-green:#cdeec0;--n-orange:#ffd3a8;--n-purple:#e1d3ff;--n-white:#fbf7ee}
+
+@media (max-width:900px){
+  .idea-board{grid-template-columns:1fr;padding:18px 12px 24px}
+  .idea-lane+.idea-lane::before{display:none}
+  .idea-lane+.idea-lane{border-top:2px dashed rgba(70,40,15,.25)}
+  .idea-note-wrap{width:min(320px,92%)}
+  .idea-tools{opacity:1}
+  .idea-months{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){.idea-note,.idea-lane{transition:none}}

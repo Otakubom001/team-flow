@@ -143,7 +143,7 @@ function serveStatic(req, res, pathname) {
     await seed();
     if (MIGRATE) {
         // Schema migrations only; the schedule needs pg_cron, which PGlite doesn't have.
-        for (const file of ['202611270001_studios.sql', '202611270002_trends_sections.sql']) {
+        for (const file of ['202611270001_studios.sql', '202611270002_trends_sections.sql', '202611280001_idea_board.sql']) {
             await db.exec(fs.readFileSync(path.join(ROOT, 'supabase/migrations', file), 'utf8'));
         }
     }
